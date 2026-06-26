@@ -3,6 +3,9 @@
 > 给模型实验室客户生产**高质量、可验证、可复现**的多步骤 agentic 训练数据。
 > 立场：**数据是产品，环境是验证底座，Task + Rubric + 验证是壁垒**。
 
+> 📄 **评审先看 [`OVERVIEW.md`](OVERVIEW.md)** —— 2 分钟读懂全貌：thesis · 架构 · 直接对应题目四问 · 关键结果 · 一条命令看它跑。
+> 本页是更完整的技术入口；全架构与取舍推理见 [`docs/design.md`](docs/design.md)。
+
 面对客户那句模糊的需求——"提升模型在真实多步骤 agentic 任务上的能力（读懂一封邮件、在应用/表格里操作几步、产出结果），给我训练环境和数据"——本仓库给出一条从 0 搭起的**数据生产线**，而不是一个"给客户模型在线训练的 RL 环境"。
 
 为什么是这个立场？因为对模型公司来说：
@@ -111,7 +114,7 @@ loom run --policy llm --limit 2 --browser
 | 1k 规模 | 跑完，吞吐 ~9k/s，峰值并发严格不超上限（browser_heavy≤8, light≤128） |
 | 调度 | async/process executor、断点续跑（重跑跳过已完成）、dead-letter 不丢弃，均有回归测试 |
 | 可观测 | OTel span 树跨线程/进程统一 trace（`--otel console/otlp→Jaeger`） |
-| 测试 | `pytest` 21 passed（verify / quality / report / browser / schedule / obs） |
+| 测试 | `pytest` **46 passed**（verify / quality / report / browser / schedule / obs / fault-attribution / pool / curate）；经 Codex 对抗式 review 闭环 |
 
 **最能说明问题的一条**：`process_violation` 策略——终态数值完全正确，reward 0.84（高于 0.8 阈值）——但因为它**没先读邮件就写入（幻觉风险）**且**调用了禁用的 `delete_row`**，被 `read_before_write`（PRM step 级）和红线 `no_delete` 抓出，**强制判 fail**。这正是"outcome-only 验证不够、必须有过程/PRM 验证"的铁证。见 `examples/sample-run/`。
 
