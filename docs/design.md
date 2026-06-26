@@ -2,7 +2,7 @@
 
 > 代号：**Loom**（把验证过的 agentic 轨迹"织"成训练数据）
 > 日期：2026-06-26
-> 状态：已实现并通过测试（`pytest` 全绿）；经 Codex / 多 agent 对抗式 review 闭环。下文描述与代码一致。
+> 状态：已实现并通过测试（`pytest` 全绿）；下文描述与代码一致。
 
 ---
 
@@ -21,7 +21,7 @@
 
 因此本平台不是"给客户一个在线 RL 环境"，而是**一条 agentic 数据生产线**：以 Task 设计 + Rubric + 多层 Verifier 为核心壁垒，环境是验证底座，规模 ≥1k 且并发隔离，最终交付**高质量、可验证、可复现的数据**。
 
-> **实现重心（经 Codex review 校正）**：本仓库要证明的不是"能跑 agent"，而是**"能定义任务 + 能精准验证对错 + 能产出可解释、可复现的数据"**。因此最深的真实实现压在 **Task/Rubric DSL + Verifier 引擎 + Gold 集 + Quality 元层**；环境只做最小真实闭环；策略以 **MockPolicy 多策略**为主链路（制造对/错轨迹给验证器区分），真 LLM 仅作 optional 佐证。
+> **实现重心**：本仓库要证明的不是"能跑 agent"，而是**"能定义任务 + 能精准验证对错 + 能产出可解释、可复现的数据"**。因此最深的真实实现压在 **Task/Rubric DSL + Verifier 引擎 + Gold 集 + Quality 元层**；环境只做最小真实闭环；策略以 **MockPolicy 多策略**为主链路（制造对/错轨迹给验证器区分），真 LLM 仅作 optional 佐证。
 
 ---
 
@@ -233,10 +233,9 @@ class DatasetManifest:
   - `wrong_column`：把营收写错单元格/错位 → state 检查 fail。
   - `process_violation`：达成终态但跳过 read_email（幻觉）/超步数/用 forbidden 动作 → 仅过程检查能抓出（论证 outcome-only 不够，需 PRM 式过程奖励）。
 - **🟡 `LLMPolicy`（optional 佐证）**：真 Claude/GPT，tool-calling + scratchpad；仅跑 1~2 条产出"真实轨迹"截图，**不作为 demo 成败依赖**。
-- **安全**：高风险写操作走 pre-action hook 拦截（呼应 KOC 的 pre-tool-use）。
+- **安全**：高风险写操作走 pre-action hook 拦截（pre-tool-use 式安全门，可挡越权/指令注入）。
 
-### 6.4 🟡 Scheduler / 编排（已做深，见 deploy/README.md）
-> 注：此层在初版后按"infra/调度做深"的要求做了实质扩展（原计划为 ⚪ 轻量）。
+### 6.4 🟡 Scheduler / 编排（见 deploy/README.md）
 - **Job 抽象**：可序列化 `Job` + 模块级 `execute_job` —— 同一 rollout 可在线程/进程/Pod 上跑。
 - **可插拔 Executor**：`async`（优先级队列 + N worker + per-class `asyncio.Semaphore` + 背压）/ `process`（每资源类一个进程池=该类并发上限，真 OS 进程隔离 + 多核）/ **K8s seam**（`render_job_manifest` 把 Job 渲染成 1 Pod/rollout 的 manifest，资源 request 按 profile）。
 - **隔离 + 资源感知**：每 rollout 独立 env 实例、零共享；分级并发上限严格不超。
@@ -453,7 +452,7 @@ copula/                         # 包名 loom
 
 ---
 
-## 12. Demo / Preview 计划（按信号强弱排序）
+## 12. 怎么跑 / 看什么（按信号强弱排序）
 
 1. **`loom eval-verifier`** ← 最强信号：验证器在 gold 集上精准区分对/错，输出混淆矩阵 / FA / FR / 泄露=0。（gold 集由 `loom/quality/gold.py:build_gold` 在 canonical 任务上**代码生成**——正确 + 3 类错误轨迹，label 由策略语义推导，非读 verifier 输出，避免循环论证。）
 2. **`loom run --tasks data/tasks --policy mock`**：5 任务 ×4 策略跑通 → 每条产出 RewardReport（逐 check 解释 + step_rewards）→ Curator 导出数据集 + manifest。
@@ -490,20 +489,6 @@ copula/                         # 包名 loom
 
 ## 15. 风险与开放问题
 
-- **时间**：午夜截止 → 严格按 🟢🟡⚪ 深度分级控范围；先做 §11 的 1→2→3，BrowserEnv/真 LLM 靠后。
 - **Playwright 安装/无头/无网**：降级到 mock env 状态，保证冒烟可跑；BrowserEnv 失败不阻断主链路。
 - **LLM-judge 成本/方差**：judge 只在小批真跑；Quality 元层量化方差。
 - **导出格式与客户口径**：三格式为合理默认；真实对接按客户 RL/SFT 框架定制（manifest 已预留 provenance）。
-
----
-
-## 附：与面试信号的对应
-
-| 面试官在意的点 | 本设计的承接 |
-|---|---|
-| 评测/验证体系（她最感兴趣） | §6.6 Verifier 引擎 + §6.6 Quality 元层（混淆矩阵/泄露） |
-| 评测指标（precision/recall/Hit@K/泄露率/多次稳定性） | Quality 元层指标 |
-| 安全/可追溯（hooks/pre-tool-use/指令注入） | Rollout hooks + Trace + 红线 required 检查（含 leakage=0） |
-| 并发/隔离/sandbox | Scheduler 并发模型 + env 实例隔离 |
-| 长程任务稳定性（scratchpad/memory） | LLMPolicy scratchpad |
-| 怎么定义/怎么蒸/怎么验证好 | Task/Rubric DSL + Curator + Verifier 全链路 |

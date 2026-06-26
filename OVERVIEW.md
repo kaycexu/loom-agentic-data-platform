@@ -86,7 +86,7 @@ flowchart LR
 | 1k 规模 | 跑完，峰值并发严格不超上限（browser_heavy≤8, light≤128）+ 成本模型 |
 | fault attribution | 环境故障重试/隔离、不漏进信号；诚实分母可追溯（端到端测试覆盖） |
 | 可观测 | OTel span 树跨线程/进程统一一条 trace（→ Jaeger，76 spans） |
-| 测试 | `pytest` **48 passed**；经 Codex 与多 agent 对抗式 review 闭环 |
+| 测试 | `pytest` **48 passed** |
 
 看板与真实 trace：
 

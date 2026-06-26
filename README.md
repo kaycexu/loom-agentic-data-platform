@@ -114,7 +114,7 @@ loom run --policy llm --limit 2 --browser
 | 1k 规模 | 跑完，吞吐 ~5k rollout/s，峰值并发**实测**严格达到且不超上限（browser_heavy≤8, light≤128；专用线程池保证上限真正可达，peak 是真实高水位而非虚高值） |
 | 调度 | async/process executor、断点续跑（重跑跳过已完成）、dead-letter 不丢弃，均有回归测试 |
 | 可观测 | OTel span 树跨线程/进程统一 trace（`--otel console/otlp→Jaeger`） |
-| 测试 | `pytest` **48 passed**（verify / quality / report / browser / schedule / obs / fault-attribution / pool / curate）；经 Codex 与多 agent 对抗式 review 闭环 |
+| 测试 | `pytest` **48 passed**（verify / quality / report / browser / schedule / obs / fault-attribution / pool / curate） |
 
 **最能说明问题的一条**：`process_violation` 策略——终态数值完全正确，reward 0.84（高于 0.8 阈值）——但因为它**没先读邮件就写入（幻觉风险）**且**调用了禁用的 `delete_row`**，被 `read_before_write`（PRM step 级）和红线 `no_delete` 抓出，**强制判 fail**。这正是"outcome-only 验证不够、必须有过程/PRM 验证"的铁证。见 `examples/sample-run/`。
 
@@ -156,7 +156,7 @@ loom/
   quality/     gold 集构造 + 验证器可靠性度量
   trace/       JSONL 可追溯 + 静态 HTML 看板
   cli.py       typer 入口
-docs/design.md 设计文档（含 Codex plan-review 修订）
+docs/design.md 设计文档（全架构 + 取舍推理）
 deploy/        Jaeger docker-compose + k8s Job manifest 样例 + 部署/扩展说明
 data/tasks/    声明式任务 + rubric 文件
 examples/      看板/环境截图 + 一个 sample run 产物
