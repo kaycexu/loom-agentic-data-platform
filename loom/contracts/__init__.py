@@ -4,11 +4,14 @@
 """
 
 from loom.contracts.models import (
+    RETRYABLE_OUTCOMES,
+    SIGNAL_OUTCOMES,
     CheckResult,
     CheckSpec,
     DatasetManifest,
     GoldSample,
     JudgeCheck,
+    Outcome,
     ProcessCheck,
     RewardReport,
     RubricCheck,
@@ -26,6 +29,9 @@ __all__ = [
     "DatasetManifest",
     "GoldSample",
     "JudgeCheck",
+    "Outcome",
+    "SIGNAL_OUTCOMES",
+    "RETRYABLE_OUTCOMES",
     "ProcessCheck",
     "RewardReport",
     "RubricCheck",

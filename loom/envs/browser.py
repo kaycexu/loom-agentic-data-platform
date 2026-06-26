@@ -26,7 +26,15 @@ import urllib.error
 import urllib.request
 from typing import Any
 
-from loom.envs.base import BROWSER_HEAVY, ToolSchema
+from loom.envs.base import BROWSER_HEAVY, EnvFault, ToolSchema
+
+
+# 工具级错误：策略调用语义上不合法的工具/参数。这是给策略的合法负反馈，
+# 必须区别于基建故障——不 raise EnvFault，而是落进 obs["error"]。
+#   - ValueError：未知工具名、int(row) 非数字
+#   - KeyError：缺必填参数（如 write_cell 无 cell、delete_row 无 row）
+#   - TypeError：int(None) 之类
+_TOOL_ERRORS = (ValueError, KeyError, TypeError)
 
 
 def _free_port() -> int:
@@ -56,6 +64,37 @@ class BrowserEnv:
 
     # ----------------------------- 接口 ----------------------------- #
     def reset(self, seed: dict[str, Any]) -> dict[str, Any]:
+        """每次 reset 都做 rollout 间隔离；但在底层进程仍健康时走 warm 路径复用它们。
+
+        warm-reuse seam：起 chromium + Flask 子进程是这里最贵的一步（数百 ms–秒）。
+        若 is_alive()，就只重置后端状态（POST /reset）并丢弃旧 browser context、建一个
+        全新独立 context（隔离上一条 rollout 的 cookie/storage/DOM），复用 chromium/flask
+        进程——这是 EnvPool 复用实例真正省时间的地方。底层不健康才冷启动全套。"""
+        if self.is_alive():
+            try:
+                return self._warm_reset(seed)
+            except Exception:
+                # warm 路径失败（进程刚好在这一刻崩了等）→ 退回冷启动；冷启动仍失败才 EnvFault。
+                self._teardown()
+        return self._cold_reset(seed)
+
+    def _warm_reset(self, seed: dict[str, Any]) -> dict[str, Any]:
+        """复用现有 chromium + Flask：重置后端状态 + 新建独立 context 保隔离。"""
+        self._http_post("/reset", seed or {})
+        # 丢弃旧 context（连同其 page/cookie/storage），建全新独立 context。
+        old_ctx = self._context
+        self._context = self._browser.new_context()
+        self._page = self._context.new_page()
+        self._page.goto(self._base, wait_until="networkidle")
+        try:
+            if old_ctx is not None:
+                old_ctx.close()
+        except Exception:
+            pass
+        return self._observe("已重置浏览器环境（warm）")
+
+    def _cold_reset(self, seed: dict[str, Any]) -> dict[str, Any]:
+        """冷启动全套：起 Flask 子进程 + chromium + 独立 context。"""
         self._teardown()  # 幂等：重复 reset 时先清理
         self._port = _free_port()
         self._base = f"http://127.0.0.1:{self._port}"
@@ -66,7 +105,11 @@ class BrowserEnv:
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
         )
-        self._wait_healthy(timeout=15.0)
+        try:
+            self._wait_healthy(timeout=15.0)
+        except EnvFault:
+            self._teardown()
+            raise
 
         # 2) 注入 seed（真实 HTTP）
         self._http_post("/reset", seed or {})
@@ -81,21 +124,41 @@ class BrowserEnv:
             self._page = self._context.new_page()
             self._page.goto(self._base, wait_until="networkidle")
         except Exception as e:
+            # 基建故障：浏览器进程/页面起不来、navigate 超时 → EnvFault（换新 env 重试，不是策略错）。
             self._teardown()
-            raise RuntimeError(f"Playwright 启动失败: {e}") from e
+            raise EnvFault(f"Playwright 启动失败: {e}") from e
 
         return self._observe("已重置浏览器环境")
 
     def step(self, action: dict[str, Any]) -> dict[str, Any]:
         name = (action or {}).get("name")
         args = (action or {}).get("args", {}) or {}
+
+        # 进环境前先探活：环境已死（浏览器/Flask 进程退出、page 关闭）→ 基建故障，立刻 EnvFault。
+        if not self.is_alive():
+            raise EnvFault("环境不可用：浏览器/Flask 子进程已退出或 page 已关闭")
+
         try:
             result = self._dispatch(name, args)
-            return self._observe(result)
-        except Exception as e:
+        except _TOOL_ERRORS as e:
+            # 工具级错误（未知工具、缺参/参数非法）→ 合法的策略侧负反馈，不 raise。
             obs = self._observe(f"error: {e}")
             obs["error"] = str(e)
             return obs
+        except Exception as e:
+            # 其它异常（多半是 playwright/HTTP 抛错）：若环境已死则归为基建故障，
+            # 否则视为工具语义错（被后端拒绝等），仍作为正常 observation 返回。
+            if not self.is_alive():
+                raise EnvFault(f"step 期间环境崩溃: {e}") from e
+            obs = self._observe(f"error: {e}")
+            obs["error"] = str(e)
+            return obs
+
+        # 动作执行成功，但构造 observation 需读回真实状态——若此时环境崩了→ 基建故障。
+        try:
+            return self._observe(result)
+        except Exception as e:
+            raise EnvFault(f"读取 observation 时环境崩溃: {e}") from e
 
     def get_state(self) -> dict[str, Any]:
         """从真实页面会话里读回状态（浏览器上下文内 fetch /state）。"""
@@ -122,6 +185,29 @@ class BrowserEnv:
 
     def close(self) -> None:
         self._teardown()
+
+    # ----------------------------- 健康探针 ----------------------------- #
+    def is_alive(self) -> bool:
+        """底层资源是否仍健康可用：Flask 子进程在跑、browser 仍 connected、page 未关闭。
+
+        供 EnvPool 在 acquire/release 时判断是否可复用，也供 step() 区分基建故障与工具错误。
+        任何探测本身抛错都视为「不活」（保守判定，宁可驱逐重建也不复用坏实例）。"""
+        try:
+            # 1) 未 reset：还没有底层资源。
+            if self._page is None or self._browser is None or self._proc is None:
+                return False
+            # 2) Flask 子进程已退出 → 死。
+            if self._proc.poll() is not None:
+                return False
+            # 3) Playwright 浏览器断连（chromium 进程 crash）→ 死。
+            if not self._browser.is_connected():
+                return False
+            # 4) page 已被关闭 → 死。
+            if self._page.is_closed():
+                return False
+        except Exception:
+            return False
+        return True
 
     # ----------------------------- 动作分发（真实浏览器操作） ----------------------------- #
     def _dispatch(self, name: str, args: dict[str, Any]) -> str:
@@ -226,13 +312,15 @@ class BrowserEnv:
         deadline = time.time() + timeout
         while time.time() < deadline:
             if self._proc and self._proc.poll() is not None:
-                raise RuntimeError("Flask 子进程提前退出")
+                # Flask 子进程提前退出 → 基建故障。
+                raise EnvFault("Flask 子进程提前退出")
             try:
                 self._http_get("/healthz")
                 return
             except Exception:
                 time.sleep(0.1)
-        raise RuntimeError("Flask 应用启动超时")
+        # 启动超时 → 基建故障。
+        raise EnvFault("Flask 应用启动超时")
 
     def _http_get(self, path: str) -> dict[str, Any]:
         with urllib.request.urlopen(self._base + path, timeout=3) as r:

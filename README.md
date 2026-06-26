@@ -121,6 +121,8 @@ loom run --policy llm --limit 2 --browser
 | Task/Rubric DSL + worked example + 生成器 | 🟢 深度真跑 |
 | Quality 元层（gold 集 / 混淆矩阵 / 泄露） | 🟢 深度真跑 |
 | MockPolicy 4 策略（造对/错轨迹喂验证器） | 🟢 主链路 |
+| Rollout 执行层 / fault attribution（Outcome 归因 + 信号路由 + 诚实分母） | 🟢 深度真跑（基建噪声不漏进信号） |
+| warm 浏览器池 + 崩溃驱逐 | 🟡 真实（池真实；1k 仍用 light 模拟；K8s pool=seam） |
 | BrowserEnv（Flask + Playwright 真实驱动） | 🟡 最小真实（1 domain 闭环） |
 | Curator + 三格式导出 + manifest | 🟡 真跑 |
 | LLMPolicy 真模型 | 🟡 optional 佐证（需 key） |
@@ -167,6 +169,17 @@ tests/         pytest（verify / quality / report / browser / schedule / obs）
 - **隔离**：每个 rollout 独占 env 实例（BrowserEnv 用独立 browser context / process executor 用独立进程），零共享可变状态。1k 压测峰值并发严格不超上限。
 - **弹性**：指数退避重试 + **dead-letter**（耗尽进 `status='dead'`，可追溯不丢弃）+ **SQLite run store 断点续跑**（同 `run_id --resume` 幂等跳过已完成）。
 - **链路追踪（OpenTelemetry）**：`loom.schedule → loom.rollout → loom.step` 与 `loom.verify → loom.check` 的 span 树，跨线程/跨进程统一在一条 trace；`--otel console` 离线可看，`--otel otlp` → Jaeger（`deploy/docker-compose.yaml`）。
+
+### Rollout 执行层 / fault attribution
+
+大规模跑 agentic 环境，最难的不是并发，是**区分"环境坏了"还是"策略错了"**——二者表象都是 `reward=0`，含义却相反。不区分，基建噪声就会漏成训练信号。所以每条 rollout 先归因到一个 `Outcome`，再决定是否算 reward、是否重试：
+
+- `COMPLETED`（含**合法 `reward=0` 负样本**）/ `POLICY_ERROR`（策略自己错，**不重试**）→ `SIGNAL` → 进验证器算**真实 reward** → 进数据集。
+- `ENV_FAULT`（浏览器 crash/超时）→ 驱逐坏实例 + 幂等重试，耗尽进 **quarantine**；`HARNESS_FAULT`（我方 bug）→ 重试，耗尽进 **dead-letter**。二者都**不是信号、不进数据集**。
+- **完整性保证**：reward 只在 `SIGNAL` rollout 上计算，基建噪声在**结构上不可能**进入数据集（与 verifier 的 `leakage=0` 内外呼应）。
+- **诚实分母**：manifest 的 `rollout_accounting` 记录 attempted / completed / policy_error / env_fault(quarantined) / dead，并区分**合法 reward=0 负样本**与**基建故障**——数据集的分母可追溯、可审计。
+
+这也是 warm 浏览器池与资源调度的交汇点：一个 `EnvFault` 既触发重试、又把崩溃实例清出池。完整设计见 [`docs/design.md` §8](docs/design.md)。
 
 ---
 

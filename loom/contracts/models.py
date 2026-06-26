@@ -8,11 +8,32 @@
 
 from __future__ import annotations
 
+from enum import Enum
 from typing import Annotated, Any, Literal, Optional, Union
 
 from pydantic import BaseModel, Field
 
 Scope = Literal["final", "step", "trajectory"]
+
+
+# --------------------------------------------------------------------------- #
+# Rollout 终态归因（★fault attribution 的核心枚举）
+#
+# 大规模跑 agentic 环境，最难的不是并发，是区分"环境坏了"和"策略错了"——
+# 二者都表现为 reward=0，但含义相反。这个枚举把判别结果做成一等公民，
+# 决定下游三件事：是否重试、是否计入训练信号、是否进隔离。
+# --------------------------------------------------------------------------- #
+class Outcome(str, Enum):
+    COMPLETED = "completed"          # 跑到终态、无基建故障（含合法 reward=0）→ 合法信号
+    POLICY_ERROR = "policy_error"    # 策略自身错（act 抛错 / 输出非法动作）→ 合法信号、不重试
+    ENV_FAULT = "env_fault"          # 环境/基建故障（浏览器 crash/hang、子进程退出…）→ 非信号 → 重试；耗尽进 quarantine
+    HARNESS_FAULT = "harness_fault"  # 我方代码/配置故障（序列化、verifier 崩、缺 key…）→ 非信号 → 重试；耗尽进 dead
+
+
+#: 产生合法训练信号、不应重试的终态（reward 真实反映模型表现）
+SIGNAL_OUTCOMES = frozenset({Outcome.COMPLETED, Outcome.POLICY_ERROR})
+#: 基建噪声、应幂等重试的终态——绝不可漏成 reward 信号污染数据集
+RETRYABLE_OUTCOMES = frozenset({Outcome.ENV_FAULT, Outcome.HARNESS_FAULT})
 
 
 # --------------------------------------------------------------------------- #
@@ -114,6 +135,9 @@ class Trajectory(BaseModel):
     steps: list[Step] = Field(default_factory=list)
     final_state: dict[str, Any] = Field(default_factory=dict)
     status: Literal["completed", "timeout", "error", "max_steps"] = "completed"
+    # 归因结论：由 runner 在跑完后判定（环境坏了 vs 策略错了 vs 正常完成）。
+    outcome: Outcome = Outcome.COMPLETED
+    fault_detail: Optional[str] = None  # ENV_FAULT / POLICY_ERROR 的归因证据（如 "browser process exited"）
     cost: dict[str, Any] = Field(default_factory=dict)
     trace_id: str = ""
 
@@ -172,4 +196,7 @@ class DatasetManifest(BaseModel):
     counts: dict[str, Any] = Field(default_factory=dict)
     reward_distribution: dict[str, Any] = Field(default_factory=dict)
     quality_metrics: dict[str, Any] = Field(default_factory=dict)
+    # 诚实分母：attempted / completed / policy_error / env_fault_retried / quarantined / dead，
+    # 让交付数据集的"分母"可追溯——基建故障被排除而非静默漏成 reward=0 负样本。
+    rollout_accounting: dict[str, Any] = Field(default_factory=dict)
     provenance: dict[str, Any] = Field(default_factory=dict)

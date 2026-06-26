@@ -18,7 +18,15 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable
 
-from loom.contracts import DatasetManifest, RewardReport, RubricSpec, TaskSpec, Trajectory
+from loom.contracts import (
+    SIGNAL_OUTCOMES,
+    DatasetManifest,
+    Outcome,
+    RewardReport,
+    RubricSpec,
+    TaskSpec,
+    Trajectory,
+)
 from loom.verify import VERIFIER_VERSION
 
 Record = tuple[TaskSpec, Trajectory, RewardReport]
@@ -69,21 +77,34 @@ def curate(
     keep_only_passed: bool = True,
     quality_metrics: dict[str, Any] | None = None,
     dataset_id: str = "loom-dataset",
+    accounting: dict[str, Any] | None = None,
 ) -> DatasetManifest:
     out = Path(out_dir)
     (out / "bundle" / "rubrics").mkdir(parents=True, exist_ok=True)
 
-    all_rewards = [rep.total_reward for _, _, rep in records]
+    # —— 诚实分母第一步：按 outcome 分流 ——
+    # 只有 SIGNAL（COMPLETED / POLICY_ERROR）的 rollout 才是合法训练信号，进入候选。
+    # ENV_FAULT / HARNESS_FAULT 是基建噪声，结构上排除出 sft/rl/bundle——但全程计入分母可追溯。
+    by_outcome: Counter[Outcome] = Counter(traj.outcome for _, traj, _ in records)
+    signal_records = [r for r in records if r[1].outcome in SIGNAL_OUTCOMES]
+
+    # reward 分布只统计合法信号（基建故障的 reward=0 是占位噪声，不该污染分布）。
+    all_rewards = [rep.total_reward for _, _, rep in signal_records]
     kept: list[Record] = []
     seen: set[str] = set()
     dropped_dup = dropped_lowq = 0
+    legit_negatives = 0  # COMPLETED 但未被 keep——合法 reward=0/低分负样本（≠ 基建故障）
 
-    for task, traj, rep in records:
+    for task, traj, rep in signal_records:
         if keep_only_passed and not rep.passed:
             dropped_lowq += 1
+            if traj.outcome == Outcome.COMPLETED:
+                legit_negatives += 1
             continue
         if rep.total_reward < keep_threshold:
             dropped_lowq += 1
+            if traj.outcome == Outcome.COMPLETED:
+                legit_negatives += 1
             continue
         key = _struct_hash(traj)
         if key in seen:
@@ -106,6 +127,22 @@ def curate(
         (out / "bundle" / "rubrics" / f"{task.task_id}.json").write_text(
             rubric_for(task).model_dump_json(indent=2), encoding="utf-8")
 
+    # —— 诚实分母：rollout_accounting ——
+    # 让交付数据集的"分母"可追溯：基建故障被显式排除并计数，而非静默漏成 reward=0 负样本。
+    signal_count = len(signal_records)
+    excluded_faults = len(records) - signal_count
+    rollout_accounting: dict[str, Any] = {
+        "attempted": len(records),
+        "by_outcome": {o.value: by_outcome.get(o, 0) for o in Outcome},
+        "signal": signal_count,
+        "excluded_faults": excluded_faults,
+        "kept": len(kept),
+        "legit_negatives": legit_negatives,
+    }
+    # merge 上游（调度/生成阶段）传入的故障计数（如 env_fault_quarantined / dead）。
+    if accounting:
+        rollout_accounting.update(accounting)
+
     manifest = DatasetManifest(
         dataset_id=dataset_id,
         created_at=datetime.now(timezone.utc).isoformat(),
@@ -121,6 +158,7 @@ def curate(
         },
         reward_distribution=_reward_hist(all_rewards),
         quality_metrics=quality_metrics or {},
+        rollout_accounting=rollout_accounting,
         provenance={"formats": ["sft.jsonl", "rl.jsonl", "bundle/"],
                     "keep_threshold": keep_threshold, "keep_only_passed": keep_only_passed},
     )

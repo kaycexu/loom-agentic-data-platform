@@ -274,7 +274,123 @@ class DatasetManifest:
 
 ---
 
-## 8. 真实实现 vs 模拟（重心明确）
+## 8. Rollout 执行层（调度 + fault attribution）
+
+§7 把"并发与规模模型"当真设计了；本节回答紧接的下一个问题：**这套模型在执行时怎么大规模、稳定地跑，且不让基建噪声污染训练信号。** 这是"数据生产线"区别于"能跑 agent 的 demo"的地方——一旦要跑 1k+ 且要交付**可信的数据**，执行层就不再是"把 rollout 并发起来"这么简单。
+
+执行层由**两根支柱**支撑，它们在 **warm 环境池**处交汇：
+
+1. **异构资源调度**（承接 §7）：按 `resource_profile` 分池限流，让昂贵的 `browser_heavy` 环境不打爆机器，同时让 `light` 环境吃满并发。
+2. **Fault attribution（故障归因）**：大规模跑 agentic 环境，最难的不是并发，而是**区分"环境坏了"还是"策略错了"**——二者在表象上都是 `reward=0`，但含义截然相反。不区分，基建噪声就会直接漏成训练信号：你以为收的是"模型做错了"的负样本，其实是"浏览器崩了"。
+
+交汇点是 warm 环境池：重量环境起一个很贵（冷启动 Playwright + Flask 应用），所以池子**复用底层进程、每个 rollout 发一个全新 browser context 保隔离**；而一个环境故障（`EnvFault`）在这里同时触发两件事——**既触发该 rollout 的幂等重试，又把崩溃的实例从池里驱逐**。资源调度与故障归因在这一个动作里耦合，正是执行层的系统观所在。
+
+### 8.1 把归因做成一等公民：`Outcome` 枚举
+
+每条 rollout 跑完先不急着算 reward，而是先归因到一个 `Outcome`。归因结果决定它**是否是合法信号、是否重试、耗尽后如何处置**：
+
+| Outcome | 含义 | 是否重试 | 是否计入信号 | 耗尽处置 |
+|---|---|---|---|---|
+| `COMPLETED` | 跑到终态、无基建故障（**含合法 `reward=0` 负样本**） | 否 | ✅ 是 | — |
+| `POLICY_ERROR` | 策略自身错了（`act` 抛错 / 输出非法动作 / 不可恢复地偏离） | **否** | ✅ 是 | — |
+| `ENV_FAULT` | 环境/基建故障（浏览器 crash/hang、子进程退出、`navigate` 超时） | 是（幂等） | ❌ 否 | **quarantine**（隔离区，可追溯） |
+| `HARNESS_FAULT` | 我方代码/配置故障（契约违反、序列化失败、bug） | 是 | ❌ 否 | **dead-letter**（死信，可追溯） |
+
+两个判定集合驱动路由：
+
+- `SIGNAL_OUTCOMES = {COMPLETED, POLICY_ERROR}` —— 只有这两类才跑验证器、产出**真实 reward**。
+- `RETRYABLE_OUTCOMES = {ENV_FAULT, HARNESS_FAULT}` —— 只有这两类才进重试/退避循环。
+
+两个关键判断值得点明：
+
+- **`POLICY_ERROR` 不重试**：策略自己出错是**合法的负信号**（模型确实做错了），重试只会抹掉这个信号、还浪费资源。它和 `COMPLETED` 一样进验证器，只是大概率拿到低 reward。
+- **`COMPLETED` 含合法 `reward=0`**：跑到终态但没达成目标（填错了数、漏了行）是**模型的错，不是环境的错**——这是数据集最需要的高质量负样本，绝不能被当成"失败"丢弃或重试。
+
+> 接口侧的契约（与 §6.2 Environment 抽象对齐）：`env.reset / step / get_state` 遇到**基建故障**时 `raise EnvFault`；而**工具级错误**（未知 tool、参数非法、越界操作）**不 raise**，而是作为 `obs["error"]` 返回给策略——这是给策略的**合法反馈**（模型应当学会从错误里恢复），不是基建故障。这条边界划错，要么把模型该学的东西误判成环境故障重试掉，要么把真故障漏成信号。
+
+### 8.2 Fault-attribution 流程
+
+```mermaid
+flowchart TD
+  T["TaskSpec<br/>(+ resource_profile)"] --> SCHED{"调度<br/>按 resource_class 分池"}
+  SCHED -->|"light: 高并发上限"| POOL
+  SCHED -->|"browser_heavy: 低并发上限"| POOL
+  POOL["warm 环境池<br/>acquire 一个 context"] --> RUN["跑 rollout<br/>Policy.act ⇄ Env.step"]
+  RUN --> ATTR{"归因 Outcome"}
+
+  ATTR -->|"EnvFault 抛出"| ENVF["ENV_FAULT"]
+  ATTR -->|"策略抛错/非法动作"| POLE["POLICY_ERROR"]
+  ATTR -->|"我方 bug/契约违反"| HARN["HARNESS_FAULT"]
+  ATTR -->|"跑到终态(含合法 reward=0)"| COMP["COMPLETED"]
+
+  ENVF --> EVICT["驱逐崩溃实例<br/>出池"]
+  EVICT --> RETRY{"重试未耗尽?"}
+  HARN --> RETRY
+  RETRY -->|"是: 换新实例幂等重试"| POOL
+  RETRY -->|"否: ENV_FAULT 耗尽"| QUAR["quarantine 隔离区"]
+  RETRY -->|"否: HARNESS_FAULT 耗尽"| DEAD["dead-letter 死信"]
+
+  COMP --> SIG
+  POLE --> SIG["SIGNAL_OUTCOMES"]
+  SIG --> VER["★Verifier 引擎"]
+  VER --> REWARD["真实 reward<br/>(含合法 reward=0 负样本)"]
+  REWARD --> DS["进数据集"]
+
+  QUAR -.->|"不是信号, 不进数据集"| X["（仅记入诚实分母）"]
+  DEAD -.->|"不是信号, 不进数据集"| X
+```
+
+一句话读图：task 按 `resource_class` 分池调度 → 从 warm 池 acquire 一个 context 跑 rollout → 归因；`ENV_FAULT` 既驱逐坏实例又换新实例重试、耗尽进 quarantine，`HARNESS_FAULT` 重试、耗尽进 dead-letter；只有 `SIGNAL`（`COMPLETED`/`POLICY_ERROR`）才进验证器产出 reward，**只有合法 reward 进数据集**。
+
+### 8.3 完整性保证（headline）
+
+> **reward 只在 SIGNAL rollout 上计算，基建噪声在结构上不可能进入数据集。**
+
+这是整个执行层的 headline。重试、退避、dead-letter、quarantine 这些机制看起来是"可靠性工程"，但它们的**本质统一在一句话**：不让基建故障漏成训练信号。验证器只能看到 `SIGNAL_OUTCOMES` 里的轨迹，`ENV_FAULT`/`HARNESS_FAULT` 在被路由到验证器**之前**就已经被分流走了——这不是"过滤掉脏数据"的事后清洗，而是一条**结构上不可逾越的边界**：脏数据根本没有进入计算 reward 的代码路径。
+
+对照 §6.6 Quality 元层的 `leakage=0`（红线负样本零误收）：那是**验证器内部**的完整性保证；本节是**验证器外部**的完整性保证。二者合起来，数据集的每一个 reward 都既"判得对"又"该判"。
+
+### 8.4 诚实分母（rollout_accounting）
+
+交付 manifest 不只报"留了多少条好数据"，还报一份诚实的执行账本 `rollout_accounting`：
+
+```
+attempted        # 总共发起多少次 rollout
+completed        # COMPLETED（其中区分 reward>0 与合法 reward=0 负样本）
+policy_error     # POLICY_ERROR（合法负信号）
+env_fault        # ENV_FAULT 耗尽进 quarantine 的数量
+dead             # HARNESS_FAULT 耗尽进 dead-letter 的数量
+```
+
+关键是**区分"合法 reward=0 负样本"与"基建故障"**：前者是数据集想要的高质量负样本，后者是必须排除的噪声。二者若混在一个"失败"计数里，分母就不诚实——客户无法判断"这批数据的负样本是模型真做错了，还是环境抽风了"。有了这份账本，数据集的分母**可追溯、可审计**：每条没进数据集的 rollout 都能说清楚为什么。
+
+### 8.5 成本模型
+
+吞吐被最贵的资源类卡住。`light` 环境可以开到很高并发（上限 128 量级），但 `browser_heavy` 因为 RAM/CPU 比 light 贵 10–100×，并发上限必须压低（8 量级）。因此：
+
+- **整体吞吐**被 `browser_heavy` 这条窄管道瓶颈住——加再多 light worker 也救不了一批 browser-heavy 任务。
+- **`$/1k` 成本**由 `browser_heavy` 分钟数主导。优化方向不是"提高总并发"，而是"减少 browser_heavy 占用"（warm 池复用进程、把能在 light 里做的检查移出浏览器、缩短每个 context 的生命周期）。
+- 调度层据此做**分池限流 + 优先级队列 + 背压**：让 light 任务不被 browser_heavy 的排队拖死，同时严格不超 browser_heavy 上限。
+
+### 8.6 可复现交付
+
+执行层的产物要做到**半年后能一模一样复跑复验**：
+
+- **版本钉死**：每条 rollout 记录 env 版本 / verifier 版本 / seed；交付 manifest 汇总这些版本号（呼应 §5 `DatasetManifest.provenance`）。
+- **provenance**：从 TaskSpec → env_seed → trajectory → reward 的每一跳都可追溯。
+- **质量证书**：附上 gold 集跑出的 leakage / FA / FR（§6.6），让客户拿到的不只是数据，还有"这批数据用的验证器有多可靠"的证书。
+
+钉死版本 + provenance + 质量证书，使得"这批数据是怎么来的、用什么验证的、可靠性如何"全部可复算——这是把"数据"升级成"可信交付物"的最后一环。
+
+### 8.7 这一节的可量化判据
+
+> **架构的好坏量化成两件事：接一个新 domain 的边际成本，以及基建故障不漏进信号的保证。**
+
+前者考验抽象是否干净（新 domain 只需实现 Environment 接口 + 写 rubric，调度/归因/交付全复用）；后者考验执行层是否真的把"环境噪声"挡在了训练信号之外（`leakage=0` + `SIGNAL_OUTCOMES` 结构边界）。这两条，正是"能大规模稳定地跑/维护环境"这个 infra 命题的落地答案。
+
+---
+
+## 9. 真实实现 vs 模拟（重心明确）
 
 | 组件 | 深度 | 说明 |
 |---|---|---|
@@ -282,6 +398,8 @@ class DatasetManifest:
 | Task/Rubric DSL + worked example + 生成器 | 🟢 深度真跑 | 5 任务族 + 放大 1k |
 | Quality 元层（gold 集 / 混淆矩阵 / 泄露） | 🟢 深度真跑 | 面试官最在意 |
 | MockPolicy 多策略（对/错轨迹） | 🟢 主链路 | 喂验证器区分 |
+| Rollout 执行层（Outcome 归因 + 信号/重试路由 + 诚实分母） | 🟢 深度真跑 | 基建噪声结构上不漏进信号 |
+| warm 浏览器池 + 崩溃驱逐 | 🟡 真实 | 池真实；1k 仍用 light 模拟；K8s pool=seam |
 | BrowserEnv（最小 Web 应用 + Playwright） | 🟡 最小真实 | 证明 state 来自真实 DOM |
 | Curator + 导出 + manifest | 🟡 真跑 | 结构去重/计数配平 |
 | preview 看板 | 🟡 真跑 | 重解释 |
@@ -292,7 +410,7 @@ class DatasetManifest:
 
 ---
 
-## 9. 技术选型
+## 10. 技术选型
 
 | 关注点 | 选型 | 理由 |
 |---|---|---|
@@ -308,7 +426,7 @@ class DatasetManifest:
 
 ---
 
-## 10. 仓库结构
+## 11. 仓库结构
 
 ```
 copula/                         # 包名 loom
@@ -335,7 +453,7 @@ copula/                         # 包名 loom
 
 ---
 
-## 11. Demo / Preview 计划（按信号强弱排序）
+## 12. Demo / Preview 计划（按信号强弱排序）
 
 1. **`loom eval-verifier --gold data/gold`** ← 最强信号：验证器在 gold 集上精准区分对/错，输出混淆矩阵 / FA / FR / 泄露=0。
 2. **`loom run --tasks data/tasks --policy mock`**：5 任务 ×4 策略跑通 → 每条产出 RewardReport（逐 check 解释 + step_rewards）→ Curator 导出数据集 + manifest。
@@ -347,7 +465,7 @@ copula/                         # 包名 loom
 
 ---
 
-## 12. 验收标准（"demo 算通过"的硬标准）
+## 13. 验收标准（"demo 算通过"的硬标准）
 
 - **验证器可靠性**：gold 集上 **leakage = 0**（红线负样本零误收）；FA/FR 与 expected_failed_checks 命中率被计算并展示。
 - **多层验证有效性**：`process_violation` 样本能被 process 检查抓出（outcome-only 会漏）——证明 PRM 式过程奖励的价值。
@@ -359,7 +477,7 @@ copula/                         # 包名 loom
 
 ---
 
-## 13. 测试策略
+## 14. 测试策略
 
 - **契约**：Pydantic 校验 + 序列化往返。
 - **Verifier**：对构造的对/错轨迹断言分数与 pass/fail；required 红线强制 fail；聚合逻辑；step_rewards 派生。
@@ -370,7 +488,7 @@ copula/                         # 包名 loom
 
 ---
 
-## 14. 风险与开放问题
+## 15. 风险与开放问题
 
 - **时间**：午夜截止 → 严格按 🟢🟡⚪ 深度分级控范围；先做 §11 的 1→2→3，BrowserEnv/真 LLM 靠后。
 - **Playwright 安装/无头/无网**：降级到 mock env 状态，保证冒烟可跑；BrowserEnv 失败不阻断主链路。

@@ -5,10 +5,26 @@
   无 playwright/flask 时导入失败不影响主链路。
 """
 
-from loom.envs.base import BROWSER_HEAVY, LIGHT, Environment, ToolSchema
+from loom.envs.base import (
+    BROWSER_HEAVY,
+    LIGHT,
+    Environment,
+    EnvFault,
+    EnvPool,
+    ToolSchema,
+)
 from loom.envs.sheet_email import SheetEmailEnv
 
-__all__ = ["Environment", "ToolSchema", "LIGHT", "BROWSER_HEAVY", "SheetEmailEnv", "make_env"]
+__all__ = [
+    "Environment",
+    "EnvFault",
+    "EnvPool",
+    "ToolSchema",
+    "LIGHT",
+    "BROWSER_HEAVY",
+    "SheetEmailEnv",
+    "make_env",
+]
 
 
 def make_env(env_type: str, prefer_browser: bool = False) -> Environment:
