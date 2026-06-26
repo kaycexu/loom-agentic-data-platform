@@ -1,0 +1,15 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+.env
+.pytest_cache/
+.DS_Store
+# 运行产物（按需保留 examples/ 下的精选产物，其余忽略）
+runs/
+out/
+*.log

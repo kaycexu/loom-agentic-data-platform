@@ -1,0 +1,31 @@
+[project]
+name = "loom"
+version = "0.1.0"
+description = "Loom — agentic 数据 + 环境生产平台 (RL environment + data pipeline)"
+requires-python = ">=3.11"
+dependencies = [
+    "pydantic>=2.6",
+    "typer>=0.12",
+    "jinja2>=3.1",
+    "rich>=13.7",
+]
+
+[project.optional-dependencies]
+# 真实浏览器环境（BrowserEnv）。无此依赖时降级到 mock 环境状态，主链路仍可跑。
+browser = ["playwright>=1.44", "flask>=3.0"]
+# 真实 LLM（judge + optional LLMPolicy）。无 key 时降级到 stub judge。
+llm = ["openai>=1.30"]
+dev = ["pytest>=8.0"]
+
+[project.scripts]
+loom = "loom.cli:app"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["loom*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
