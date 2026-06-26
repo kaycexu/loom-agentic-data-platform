@@ -92,9 +92,11 @@ def build_rubric(task: TaskSpec) -> RubricSpec:
         check_id="email_done", weight=1.0,
         spec=StateCheck(op="state_equals", args={"path": "email.status", "value": "done"})))
 
-    # 4) PRM 式过程：每次写入前需先读邮件（反幻觉，step 级）
+    # 4) 红线·PRM 式过程：每次写入前需先读邮件（反幻觉，step 级）。
+    #    设为 required=True —— 抗 reward hacking：策略不能靠"直接写已知答案、跳过理解"拿分。
+    #    跳过 read_email 即 fail-closed（不只是扣分），与 process_violation 的 gold 预期对齐。
     checks.append(RubricCheck(
-        check_id="read_before_write", weight=1.0,
+        check_id="read_before_write", required=True, weight=1.0,
         spec=ProcessCheck(op="tool_preceded_by",
                           args={"tool": "write_cell", "by": "read_email"}, scope="step")))
 

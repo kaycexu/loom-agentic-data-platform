@@ -1,6 +1,6 @@
 {
   "dataset_id": "loom-dataset",
-  "created_at": "2026-06-26T13:20:31.654924+00:00",
+  "created_at": "2026-06-26T14:46:03.201073+00:00",
   "policy_model": "mock-oracle",
   "verifier_versions": {
     "verifier": "v1"
@@ -454,7 +454,12 @@
     "signal": 20,
     "excluded_faults": 0,
     "kept": 5,
-    "legit_negatives": 15
+    "legit_negatives": 15,
+    "scale_attempted": 1000,
+    "scale_signal_count": 1000,
+    "scale_env_fault_quarantined": 0,
+    "scale_dead_letter": 0,
+    "scale_rollout_attempts": 1000
   },
   "provenance": {
     "formats": [

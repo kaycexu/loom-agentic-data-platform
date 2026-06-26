@@ -2,7 +2,7 @@
 
 > 代号：**Loom**（把验证过的 agentic 轨迹"织"成训练数据）
 > 日期：2026-06-26
-> 状态：设计已对齐（含 Codex Plan Review 修订），待实现
+> 状态：已实现并通过测试（`pytest` 全绿）；经 Codex / 多 agent 对抗式 review 闭环。下文描述与代码一致。
 
 ---
 
@@ -166,7 +166,7 @@ class CheckResult:
 
 class RewardReport:
     task_id: str; trace_id: str
-    total_reward: float          # [0,1] 加权聚合（required 不过则强制 0/fail）
+    total_reward: float          # [0,1] 加权聚合；required 不过 → passed=False（total 仍保留原值，故可呈现"高分但判负"，见 §6.6 / §13）
     passed: bool
     step_rewards: list[float]    # 由 scope=step 的 CheckResult 按步聚合而来
     checks: list[CheckResult]
@@ -213,7 +213,7 @@ class DatasetManifest:
     | row_south | state | `cell_equals B3=95` | ✅ 红线 | final |
     | row_west | state | `cell_equals B4=143` | ✅ 红线 | final |
     | email_done | state | `state_equals email.status=done` | ✗ | final |
-    | read_first | process | `tool_sequence_contains [read_email, write_cell]`（先读后写，反幻觉） | ✗ | step |
+    | read_before_write | process | `tool_preceded_by`：每次 write_cell 前必须先 read_email（反幻觉） | ✅ 红线 | step |
     | no_delete | process | `forbidden_action_absent delete_row` | ✅ 红线 | trajectory |
     | step_budget | process | `max_steps <= 15` | ✗ | trajectory |
     | faithful | judge | "是否正确理解三地区数字且未编造数据" | ✗ | trajectory |
@@ -445,8 +445,8 @@ copula/                         # 包名 loom
 │   ├── trace/                  # JSONL trace + 看板生成
 │   └── cli.py                  # typer：run / scale / eval-verifier / report
 ├── data/
-│   ├── tasks/                  # 样例任务 + rubric
-│   └── gold/                   # gold 子集（正确 + 3 类错误轨迹，带 label）
+│   └── tasks/                  # 物化的样例任务 + rubric（materialize-tasks 落盘）
+│   # 注：gold 集不落盘为 data 文件，由 loom/quality/gold.py:build_gold 代码生成（带 label）
 ├── examples/                   # 端到端产物 + 看板截图
 └── tests/
 ```
@@ -455,7 +455,7 @@ copula/                         # 包名 loom
 
 ## 12. Demo / Preview 计划（按信号强弱排序）
 
-1. **`loom eval-verifier --gold data/gold`** ← 最强信号：验证器在 gold 集上精准区分对/错，输出混淆矩阵 / FA / FR / 泄露=0。
+1. **`loom eval-verifier`** ← 最强信号：验证器在 gold 集上精准区分对/错，输出混淆矩阵 / FA / FR / 泄露=0。（gold 集由 `loom/quality/gold.py:build_gold` 在 canonical 任务上**代码生成**——正确 + 3 类错误轨迹，label 由策略语义推导，非读 verifier 输出，避免循环论证。）
 2. **`loom run --tasks data/tasks --policy mock`**：5 任务 ×4 策略跑通 → 每条产出 RewardReport（逐 check 解释 + step_rewards）→ Curator 导出数据集 + manifest。
 3. **`loom report`**：生成静态 HTML 看板（通过率、reward 分布、逐 check 解释、trace 下钻、验证器可靠性面板）。
 4. **`loom scale --n 1000 --policy mock`**：分级信号量下跑完 1k，输出吞吐/并发摘要 + trace。

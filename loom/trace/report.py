@@ -44,7 +44,7 @@ _TEMPLATE = Environment(autoescape=True).from_string(
 <div class="chips">
  <span class="chip">rollouts <b>{{ n }}</b></span>
  <span class="chip">pass <b class="ok">{{ n_pass }}</b> / fail <b class="bad">{{ n_fail }}</b></span>
- <span class="chip">pass rate <b>{{ pass_rate }}</b></span>
+ <span class="chip">本批 pass rate <b>{{ pass_rate }}</b></span>
  <span class="chip">policies <b>{{ policies|join(', ') }}</b></span>
 </div>
 
@@ -73,8 +73,14 @@ _TEMPLATE = Environment(autoescape=True).from_string(
  <span class="chip">tasks <b>{{ schedule.total }}</b></span>
  <span class="chip">wall <b>{{ schedule.wall_clock_s }}s</b></span>
  <span class="chip">吞吐 <b>{{ schedule.throughput_per_s }}/s</b></span>
- <span class="chip">pass rate <b>{{ schedule.pass_rate }}</b></span>
+ <span class="chip">规模批 pass rate <b>{{ schedule.pass_rate }}</b><span class="mut"> （分母仅含合法信号 {{ schedule.completed }}）</span></span>
  <span class="chip">重试 <b>{{ schedule.retried }}</b></span>
+</div>
+<div class="chips">
+ <span class="chip">合法信号 <b>{{ schedule.signal_count }}</b></span>
+ <span class="chip">env 故障隔离 <b class="{{ 'ok' if schedule.env_fault_quarantined==0 else 'warn' }}">{{ schedule.env_fault_quarantined }}</b></span>
+ <span class="chip">dead-letter <b class="{{ 'ok' if schedule.dead_letter==0 else 'warn' }}">{{ schedule.dead_letter }}</b></span>
+ <span class="chip">rollout 执行次数(含重试) <b>{{ schedule.rollout_attempts }}</b></span>
 </div>
 <table><tr><th>资源类</th><th>并发上限</th><th>峰值并发</th><th>任务数</th></tr>
 {% for cls, cap in schedule.configured_caps.items() %}
@@ -82,6 +88,7 @@ _TEMPLATE = Environment(autoescape=True).from_string(
  <td class="{{ 'ok' if schedule.peak_concurrency.get(cls,0)<=cap else 'bad' }}">{{ schedule.peak_concurrency.get(cls,0) }}</td>
  <td>{{ schedule.by_resource_class.get(cls,0) }}</td></tr>
 {% endfor %}</table>
+<p class="mut">峰值并发 = 实测在册并发高水位（专用线程池保证分级上限真正可达，非默认线程池节流后的虚高值）。诚实分母：基建故障（env 隔离 / dead-letter）不计入 pass rate 分母、结构性排除出数据集。</p>
 {% endif %}
 
 {% if manifest %}

@@ -27,7 +27,7 @@
 <div class="chips">
  <span class="chip">rollouts <b>20</b></span>
  <span class="chip">pass <b class="ok">5</b> / fail <b class="bad">15</b></span>
- <span class="chip">pass rate <b>0.25</b></span>
+ <span class="chip">本批 pass rate <b>0.25</b></span>
  <span class="chip">policies <b>mock:correct, mock:missing_fill, mock:process_violation, mock:wrong_column</b></span>
 </div>
 
@@ -52,10 +52,16 @@
 <h2>② 调度 / 并发（资源感知 + 隔离，1k 模拟）</h2>
 <div class="chips">
  <span class="chip">tasks <b>1000</b></span>
- <span class="chip">wall <b>0.184s</b></span>
- <span class="chip">吞吐 <b>5431.6/s</b></span>
- <span class="chip">pass rate <b>0.7</b></span>
+ <span class="chip">wall <b>0.204s</b></span>
+ <span class="chip">吞吐 <b>4901.6/s</b></span>
+ <span class="chip">规模批 pass rate <b>0.7</b><span class="mut"> （分母仅含合法信号 1000）</span></span>
  <span class="chip">重试 <b>0</b></span>
+</div>
+<div class="chips">
+ <span class="chip">合法信号 <b>1000</b></span>
+ <span class="chip">env 故障隔离 <b class="ok">0</b></span>
+ <span class="chip">dead-letter <b class="ok">0</b></span>
+ <span class="chip">rollout 执行次数(含重试) <b>1000</b></span>
 </div>
 <table><tr><th>资源类</th><th>并发上限</th><th>峰值并发</th><th>任务数</th></tr>
 
@@ -67,6 +73,7 @@
  <td class="ok">8</td>
  <td>50</td></tr>
 </table>
+<p class="mut">峰值并发 = 实测在册并发高水位（专用线程池保证分级上限真正可达，非默认线程池节流后的虚高值）。诚实分母：基建故障（env 隔离 / dead-letter）不计入 pass rate 分母、结构性排除出数据集。</p>
 
 
 
@@ -136,7 +143,7 @@
   <td><span class="ok">✓</span></td>
   <td class="mut">email.status=&#39;done&#39; (期望 &#39;done&#39;)</td></tr><tr>
   <td><code>read_before_write</code></td><td>process/step</td>
-  <td></td><td>1.0</td>
+  <td>是</td><td>1.0</td>
   <td><span class="ok">✓</span></td>
   <td class="mut">每次 write_cell 前需先 read_email；3 次调用，通过 3/3</td></tr><tr>
   <td><code>no_delete</code></td><td>process/trajectory</td>
@@ -193,7 +200,7 @@
   <td><span class="ok">✓</span></td>
   <td class="mut">email.status=&#39;done&#39; (期望 &#39;done&#39;)</td></tr><tr>
   <td><code>read_before_write</code></td><td>process/step</td>
-  <td></td><td>1.0</td>
+  <td>是</td><td>1.0</td>
   <td><span class="ok">✓</span></td>
   <td class="mut">每次 write_cell 前需先 read_email；2 次调用，通过 2/2</td></tr><tr>
   <td><code>no_delete</code></td><td>process/trajectory</td>
@@ -250,7 +257,7 @@
   <td><span class="ok">✓</span></td>
   <td class="mut">email.status=&#39;done&#39; (期望 &#39;done&#39;)</td></tr><tr>
   <td><code>read_before_write</code></td><td>process/step</td>
-  <td></td><td>1.0</td>
+  <td>是</td><td>1.0</td>
   <td><span class="ok">✓</span></td>
   <td class="mut">每次 write_cell 前需先 read_email；3 次调用，通过 3/3</td></tr><tr>
   <td><code>no_delete</code></td><td>process/trajectory</td>
@@ -273,7 +280,7 @@
  <td><span class="badge fail">FAIL</span></td>
  <td>0.84</td>
  <td><div class="bars"><div class="bar" style="height:2px;background:#ff6b6b"></div><div class="bar" style="height:2px;background:#ff6b6b"></div><div class="bar" style="height:2px;background:#ff6b6b"></div><div class="bar" style="height:22px;background:#43d17a"></div><div class="bar" style="height:22px;background:#43d17a"></div></div></td>
- <td><code>read_before_write</code> <code>no_delete</code><span class="bad">*</span> </td>
+ <td><code>read_before_write</code><span class="bad">*</span> <code>no_delete</code><span class="bad">*</span> </td>
 </tr>
 <tr><td colspan="6"><details><summary class="mut">checks 明细（write_cell → write_cell → write_cell → delete_row → mark_email_done）</summary>
  <table><tr><th>check</th><th>类型</th><th>红线</th><th>score</th><th>判定</th><th>理由</th></tr>
@@ -307,7 +314,7 @@
   <td><span class="ok">✓</span></td>
   <td class="mut">email.status=&#39;done&#39; (期望 &#39;done&#39;)</td></tr><tr>
   <td><code>read_before_write</code></td><td>process/step</td>
-  <td></td><td>0.0</td>
+  <td>是</td><td>0.0</td>
   <td><span class="bad">✗</span></td>
   <td class="mut">每次 write_cell 前需先 read_email；3 次调用，通过 0/3</td></tr><tr>
   <td><code>no_delete</code></td><td>process/trajectory</td>
@@ -364,7 +371,7 @@
   <td><span class="ok">✓</span></td>
   <td class="mut">email.status=&#39;done&#39; (期望 &#39;done&#39;)</td></tr><tr>
   <td><code>read_before_write</code></td><td>process/step</td>
-  <td></td><td>1.0</td>
+  <td>是</td><td>1.0</td>
   <td><span class="ok">✓</span></td>
   <td class="mut">每次 write_cell 前需先 read_email；3 次调用，通过 3/3</td></tr><tr>
   <td><code>no_delete</code></td><td>process/trajectory</td>
@@ -421,7 +428,7 @@
   <td><span class="ok">✓</span></td>
   <td class="mut">email.status=&#39;done&#39; (期望 &#39;done&#39;)</td></tr><tr>
   <td><code>read_before_write</code></td><td>process/step</td>
-  <td></td><td>1.0</td>
+  <td>是</td><td>1.0</td>
   <td><span class="ok">✓</span></td>
   <td class="mut">每次 write_cell 前需先 read_email；2 次调用，通过 2/2</td></tr><tr>
   <td><code>no_delete</code></td><td>process/trajectory</td>
@@ -478,7 +485,7 @@
   <td><span class="ok">✓</span></td>
   <td class="mut">email.status=&#39;done&#39; (期望 &#39;done&#39;)</td></tr><tr>
   <td><code>read_before_write</code></td><td>process/step</td>
-  <td></td><td>1.0</td>
+  <td>是</td><td>1.0</td>
   <td><span class="ok">✓</span></td>
   <td class="mut">每次 write_cell 前需先 read_email；3 次调用，通过 3/3</td></tr><tr>
   <td><code>no_delete</code></td><td>process/trajectory</td>
@@ -501,7 +508,7 @@
  <td><span class="badge fail">FAIL</span></td>
  <td>0.84</td>
  <td><div class="bars"><div class="bar" style="height:2px;background:#ff6b6b"></div><div class="bar" style="height:2px;background:#ff6b6b"></div><div class="bar" style="height:2px;background:#ff6b6b"></div><div class="bar" style="height:22px;background:#43d17a"></div><div class="bar" style="height:22px;background:#43d17a"></div></div></td>
- <td><code>read_before_write</code> <code>no_delete</code><span class="bad">*</span> </td>
+ <td><code>read_before_write</code><span class="bad">*</span> <code>no_delete</code><span class="bad">*</span> </td>
 </tr>
 <tr><td colspan="6"><details><summary class="mut">checks 明细（write_cell → write_cell → write_cell → delete_row → mark_email_done）</summary>
  <table><tr><th>check</th><th>类型</th><th>红线</th><th>score</th><th>判定</th><th>理由</th></tr>
@@ -535,7 +542,7 @@
   <td><span class="ok">✓</span></td>
   <td class="mut">email.status=&#39;done&#39; (期望 &#39;done&#39;)</td></tr><tr>
   <td><code>read_before_write</code></td><td>process/step</td>
-  <td></td><td>0.0</td>
+  <td>是</td><td>0.0</td>
   <td><span class="bad">✗</span></td>
   <td class="mut">每次 write_cell 前需先 read_email；3 次调用，通过 0/3</td></tr><tr>
   <td><code>no_delete</code></td><td>process/trajectory</td>
@@ -592,7 +599,7 @@
   <td><span class="ok">✓</span></td>
   <td class="mut">email.status=&#39;done&#39; (期望 &#39;done&#39;)</td></tr><tr>
   <td><code>read_before_write</code></td><td>process/step</td>
-  <td></td><td>1.0</td>
+  <td>是</td><td>1.0</td>
   <td><span class="ok">✓</span></td>
   <td class="mut">每次 write_cell 前需先 read_email；3 次调用，通过 3/3</td></tr><tr>
   <td><code>no_delete</code></td><td>process/trajectory</td>
@@ -649,7 +656,7 @@
   <td><span class="ok">✓</span></td>
   <td class="mut">email.status=&#39;done&#39; (期望 &#39;done&#39;)</td></tr><tr>
   <td><code>read_before_write</code></td><td>process/step</td>
-  <td></td><td>1.0</td>
+  <td>是</td><td>1.0</td>
   <td><span class="ok">✓</span></td>
   <td class="mut">每次 write_cell 前需先 read_email；2 次调用，通过 2/2</td></tr><tr>
   <td><code>no_delete</code></td><td>process/trajectory</td>
@@ -706,7 +713,7 @@
   <td><span class="ok">✓</span></td>
   <td class="mut">email.status=&#39;done&#39; (期望 &#39;done&#39;)</td></tr><tr>
   <td><code>read_before_write</code></td><td>process/step</td>
-  <td></td><td>1.0</td>
+  <td>是</td><td>1.0</td>
   <td><span class="ok">✓</span></td>
   <td class="mut">每次 write_cell 前需先 read_email；3 次调用，通过 3/3</td></tr><tr>
   <td><code>no_delete</code></td><td>process/trajectory</td>
@@ -729,7 +736,7 @@
  <td><span class="badge fail">FAIL</span></td>
  <td>0.84</td>
  <td><div class="bars"><div class="bar" style="height:2px;background:#ff6b6b"></div><div class="bar" style="height:2px;background:#ff6b6b"></div><div class="bar" style="height:2px;background:#ff6b6b"></div><div class="bar" style="height:22px;background:#43d17a"></div><div class="bar" style="height:22px;background:#43d17a"></div></div></td>
- <td><code>read_before_write</code> <code>no_delete</code><span class="bad">*</span> </td>
+ <td><code>read_before_write</code><span class="bad">*</span> <code>no_delete</code><span class="bad">*</span> </td>
 </tr>
 <tr><td colspan="6"><details><summary class="mut">checks 明细（write_cell → write_cell → write_cell → delete_row → mark_email_done）</summary>
  <table><tr><th>check</th><th>类型</th><th>红线</th><th>score</th><th>判定</th><th>理由</th></tr>
@@ -763,7 +770,7 @@
   <td><span class="ok">✓</span></td>
   <td class="mut">email.status=&#39;done&#39; (期望 &#39;done&#39;)</td></tr><tr>
   <td><code>read_before_write</code></td><td>process/step</td>
-  <td></td><td>0.0</td>
+  <td>是</td><td>0.0</td>
   <td><span class="bad">✗</span></td>
   <td class="mut">每次 write_cell 前需先 read_email；3 次调用，通过 0/3</td></tr><tr>
   <td><code>no_delete</code></td><td>process/trajectory</td>
@@ -828,7 +835,7 @@
   <td><span class="ok">✓</span></td>
   <td class="mut">email.status=&#39;done&#39; (期望 &#39;done&#39;)</td></tr><tr>
   <td><code>read_before_write</code></td><td>process/step</td>
-  <td></td><td>1.0</td>
+  <td>是</td><td>1.0</td>
   <td><span class="ok">✓</span></td>
   <td class="mut">每次 write_cell 前需先 read_email；4 次调用，通过 4/4</td></tr><tr>
   <td><code>no_delete</code></td><td>process/trajectory</td>
@@ -893,7 +900,7 @@
   <td><span class="ok">✓</span></td>
   <td class="mut">email.status=&#39;done&#39; (期望 &#39;done&#39;)</td></tr><tr>
   <td><code>read_before_write</code></td><td>process/step</td>
-  <td></td><td>1.0</td>
+  <td>是</td><td>1.0</td>
   <td><span class="ok">✓</span></td>
   <td class="mut">每次 write_cell 前需先 read_email；3 次调用，通过 3/3</td></tr><tr>
   <td><code>no_delete</code></td><td>process/trajectory</td>
@@ -958,7 +965,7 @@
   <td><span class="ok">✓</span></td>
   <td class="mut">email.status=&#39;done&#39; (期望 &#39;done&#39;)</td></tr><tr>
   <td><code>read_before_write</code></td><td>process/step</td>
-  <td></td><td>1.0</td>
+  <td>是</td><td>1.0</td>
   <td><span class="ok">✓</span></td>
   <td class="mut">每次 write_cell 前需先 read_email；4 次调用，通过 4/4</td></tr><tr>
   <td><code>no_delete</code></td><td>process/trajectory</td>
@@ -981,7 +988,7 @@
  <td><span class="badge fail">FAIL</span></td>
  <td>0.871</td>
  <td><div class="bars"><div class="bar" style="height:2px;background:#ff6b6b"></div><div class="bar" style="height:2px;background:#ff6b6b"></div><div class="bar" style="height:2px;background:#ff6b6b"></div><div class="bar" style="height:2px;background:#ff6b6b"></div><div class="bar" style="height:22px;background:#43d17a"></div><div class="bar" style="height:22px;background:#43d17a"></div></div></td>
- <td><code>read_before_write</code> <code>no_delete</code><span class="bad">*</span> </td>
+ <td><code>read_before_write</code><span class="bad">*</span> <code>no_delete</code><span class="bad">*</span> </td>
 </tr>
 <tr><td colspan="6"><details><summary class="mut">checks 明细（write_cell → write_cell → write_cell → write_cell → delete_row → mark_email_done）</summary>
  <table><tr><th>check</th><th>类型</th><th>红线</th><th>score</th><th>判定</th><th>理由</th></tr>
@@ -1023,7 +1030,7 @@
   <td><span class="ok">✓</span></td>
   <td class="mut">email.status=&#39;done&#39; (期望 &#39;done&#39;)</td></tr><tr>
   <td><code>read_before_write</code></td><td>process/step</td>
-  <td></td><td>0.0</td>
+  <td>是</td><td>0.0</td>
   <td><span class="bad">✗</span></td>
   <td class="mut">每次 write_cell 前需先 read_email；4 次调用，通过 0/4</td></tr><tr>
   <td><code>no_delete</code></td><td>process/trajectory</td>
@@ -1080,7 +1087,7 @@
   <td><span class="ok">✓</span></td>
   <td class="mut">email.status=&#39;done&#39; (期望 &#39;done&#39;)</td></tr><tr>
   <td><code>read_before_write</code></td><td>process/step</td>
-  <td></td><td>1.0</td>
+  <td>是</td><td>1.0</td>
   <td><span class="ok">✓</span></td>
   <td class="mut">每次 write_cell 前需先 read_email；3 次调用，通过 3/3</td></tr><tr>
   <td><code>no_delete</code></td><td>process/trajectory</td>
@@ -1137,7 +1144,7 @@
   <td><span class="ok">✓</span></td>
   <td class="mut">email.status=&#39;done&#39; (期望 &#39;done&#39;)</td></tr><tr>
   <td><code>read_before_write</code></td><td>process/step</td>
-  <td></td><td>1.0</td>
+  <td>是</td><td>1.0</td>
   <td><span class="ok">✓</span></td>
   <td class="mut">每次 write_cell 前需先 read_email；2 次调用，通过 2/2</td></tr><tr>
   <td><code>no_delete</code></td><td>process/trajectory</td>
@@ -1194,7 +1201,7 @@
   <td><span class="ok">✓</span></td>
   <td class="mut">email.status=&#39;done&#39; (期望 &#39;done&#39;)</td></tr><tr>
   <td><code>read_before_write</code></td><td>process/step</td>
-  <td></td><td>1.0</td>
+  <td>是</td><td>1.0</td>
   <td><span class="ok">✓</span></td>
   <td class="mut">每次 write_cell 前需先 read_email；3 次调用，通过 3/3</td></tr><tr>
   <td><code>no_delete</code></td><td>process/trajectory</td>
@@ -1217,7 +1224,7 @@
  <td><span class="badge fail">FAIL</span></td>
  <td>0.84</td>
  <td><div class="bars"><div class="bar" style="height:2px;background:#ff6b6b"></div><div class="bar" style="height:2px;background:#ff6b6b"></div><div class="bar" style="height:2px;background:#ff6b6b"></div><div class="bar" style="height:22px;background:#43d17a"></div><div class="bar" style="height:22px;background:#43d17a"></div></div></td>
- <td><code>read_before_write</code> <code>no_delete</code><span class="bad">*</span> </td>
+ <td><code>read_before_write</code><span class="bad">*</span> <code>no_delete</code><span class="bad">*</span> </td>
 </tr>
 <tr><td colspan="6"><details><summary class="mut">checks 明细（write_cell → write_cell → write_cell → delete_row → mark_email_done）</summary>
  <table><tr><th>check</th><th>类型</th><th>红线</th><th>score</th><th>判定</th><th>理由</th></tr>
@@ -1251,7 +1258,7 @@
   <td><span class="ok">✓</span></td>
   <td class="mut">email.status=&#39;done&#39; (期望 &#39;done&#39;)</td></tr><tr>
   <td><code>read_before_write</code></td><td>process/step</td>
-  <td></td><td>0.0</td>
+  <td>是</td><td>0.0</td>
   <td><span class="bad">✗</span></td>
   <td class="mut">每次 write_cell 前需先 read_email；3 次调用，通过 0/3</td></tr><tr>
   <td><code>no_delete</code></td><td>process/trajectory</td>

@@ -87,6 +87,22 @@ class FaultyPolicy:
         raise ValueError("policy produced unparseable action")
 
 
+class InfraFaultPolicy:
+    """act() 抛 EnvFault——模拟 LLMPolicy 在真模型路径上撞到代理超时/限流/网络故障。
+
+    关键区别于 FaultyPolicy：这是策略侧的**基建噪声**，不是模型的合法决策。
+    必须归 ENV_FAULT（重试、不计信号），绝不能被吞成 'submit' 漏成 COMPLETED 负样本。"""
+
+    name = "llm:infra-down"
+    usage: dict = {}
+
+    def reset(self, task, tools):
+        pass
+
+    def act(self, obs):
+        raise EnvFault("LLM proxy fault: TimeoutError: upstream 504")
+
+
 # --------------------------------------------------------------------------- #
 # 测试
 # --------------------------------------------------------------------------- #
@@ -130,6 +146,38 @@ def test_policy_error_is_signal():
     assert traj.outcome == Outcome.POLICY_ERROR
     assert Outcome.POLICY_ERROR in SIGNAL_OUTCOMES  # 设计上：是信号、不重试
     assert "unparseable" in (traj.fault_detail or "")
+
+
+def test_policy_side_infra_fault_is_env_fault_not_signal():
+    """★回归（修复 LLMPolicy 吞异常漏洞）：策略侧基建故障（EnvFault from act）
+    必须归 ENV_FAULT、不计信号、可重试——绝不能被当成 POLICY_ERROR 或 COMPLETED 负样本。"""
+    task = canonical_tasks()[0]
+    traj = run_rollout(task, SheetEmailEnv(), InfraFaultPolicy())
+
+    assert traj.outcome == Outcome.ENV_FAULT          # 不是 POLICY_ERROR
+    assert traj.outcome not in SIGNAL_OUTCOMES        # 不计训练信号
+    assert "LLM proxy fault" in (traj.fault_detail or "")
+
+
+def test_policy_side_infra_fault_retried_then_quarantined(monkeypatch):
+    """端到端：策略侧基建故障经 jobs 路由——重试到耗尽 → quarantine、不进数据集。"""
+    monkeypatch.setattr("loom.envs.make_env",
+                        lambda env_type="browser", prefer_browser=False: SheetEmailEnv())
+
+    class _Pol(InfraFaultPolicy):
+        pass
+
+    monkeypatch.setattr("loom.schedule.jobs._policy_from_spec", lambda spec: _Pol())
+    task = canonical_tasks()[0]
+    job = Job(run_id="infra", task=task, policy_spec="llm", resource_class="light")
+
+    res = run_job_with_retries(job, max_attempts=3)
+
+    assert res.outcome == Outcome.ENV_FAULT
+    assert res.status == "quarantined"
+    assert res.attempts == 3
+    assert res.is_signal is False
+    assert res.report.total_reward == 0.0
 
 
 def test_mixed_fault_and_signal_end_to_end(tmp_path, monkeypatch):

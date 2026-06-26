@@ -15,6 +15,7 @@ from __future__ import annotations
 import asyncio
 import os
 from collections import Counter
+from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Callable, Optional, Protocol
 
 from loom.schedule.jobs import Job, JobResult, run_job_with_retries
@@ -45,6 +46,12 @@ class AsyncExecutor:
         peak: Counter = Counter()
         results: list[JobResult] = []
         lock = asyncio.Lock()
+        loop = asyncio.get_running_loop()
+        # 专用线程池，容量 = 各资源类上限之和。否则 asyncio.to_thread 落到默认线程池
+        # （max_workers≈min(32, cpu+4)），把 light:128 这类高上限静默节流到 ~32——
+        # 于是 peak_concurrency 会虚高于真实 OS 并行度（"诚实分母"项目里尤其不能这样）。
+        # 给足线程，分级信号量才是真正生效的上限，peak 才是诚实的在册并发高水位。
+        pool = ThreadPoolExecutor(max_workers=max(1, sum(caps.values())))
 
         pq: asyncio.PriorityQueue = asyncio.PriorityQueue()
         for j in jobs:
@@ -58,7 +65,7 @@ class AsyncExecutor:
                     active[cls] += 1
                     peak[cls] = max(peak[cls], active[cls])
                 try:
-                    res = await asyncio.to_thread(run_job_with_retries, job, max_attempts)
+                    res = await loop.run_in_executor(pool, run_job_with_retries, job, max_attempts)
                 finally:
                     async with lock:
                         active[cls] -= 1
@@ -78,7 +85,10 @@ class AsyncExecutor:
                 await run_one(job)
 
         n_workers = max(1, sum(caps.values()))
-        await asyncio.gather(*(worker() for _ in range(n_workers)))
+        try:
+            await asyncio.gather(*(worker() for _ in range(n_workers)))
+        finally:
+            pool.shutdown(wait=True)
         return results, dict(peak)
 
 

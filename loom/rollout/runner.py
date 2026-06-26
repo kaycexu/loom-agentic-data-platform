@@ -60,6 +60,11 @@ def run_rollout(
             for i in range(max_steps):
                 try:
                     action = policy.act(obs)
+                except EnvFault as e:  # 策略侧基建故障（如 LLM 代理超时/限流）→ 非信号、重试，绝不当成模型负样本
+                    outcome = Outcome.ENV_FAULT
+                    fault_detail = f"policy.act: {e}"
+                    status = "error"
+                    break
                 except Exception as e:  # noqa: BLE001 — 策略产出非法/崩溃 → 合法的策略失败信号
                     outcome = Outcome.POLICY_ERROR
                     fault_detail = f"policy.act: {type(e).__name__}: {e}"

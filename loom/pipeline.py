@@ -164,18 +164,28 @@ def run_demo(run: RunDir, scale_n: int = 1000, prefer_browser: bool = False,
                         rubric_for(by_id[gold[0].task_id]))
     run.write_json("judge_variance.json", jv)
 
-    # ③ 全链路生成 + 数据集（mock-all 制造对/错轨迹）
-    records, durations = generate_records(tasks, "mock-all", prefer_browser, verifier)
-    manifest = curate(records, rubric_for, out_dir=run.path("dataset"),
-                      policy_model="mock-oracle", quality_metrics=quality)
-
-    # ② 规模/并发（写入同一 run 的 schedule.json）
+    # ② 规模/并发先跑（其诚实分母要接进交付 manifest——基建故障在规模批才会出现）
     scale_tasks = generate_tasks(scale_n)
     policy_for, class_for, priority_for = _scale_closures(scale_n, browser_fraction=5)
     sched = schedule_tasks(scale_tasks, policy_for=policy_for, class_for=class_for,
                            priority_for=priority_for, executor=executor,
                            run_id=f"demo-scale-{scale_n}")
     run.write_json("schedule.json", sched.summary)
+
+    # ③ 全链路生成 + 数据集（mock-all 制造对/错轨迹）
+    records, durations = generate_records(tasks, "mock-all", prefer_browser, verifier)
+    # 把规模批的诚实分母接进交付 manifest（thesis 的核心卖点不能只活在 schedule.json）。
+    # 用 scale_ 前缀标明这是规模批口径，与本 dataset 批的本地 attempted/signal/kept 不冲突、不覆盖。
+    scale_acc = {
+        "scale_attempted": sched.summary["attempted"],
+        "scale_signal_count": sched.summary["signal_count"],
+        "scale_env_fault_quarantined": sched.summary["env_fault_quarantined"],
+        "scale_dead_letter": sched.summary["dead_letter"],
+        "scale_rollout_attempts": sched.summary["rollout_attempts"],
+    }
+    manifest = curate(records, rubric_for, out_dir=run.path("dataset"),
+                      policy_model="mock-oracle", quality_metrics=quality,
+                      accounting=scale_acc)
 
     run.write_records(records, durations=durations)
     report = render_report(run, title="Loom — agentic 数据 + 环境生产平台 · 综合 demo",

@@ -14,7 +14,7 @@ from typing import Any, Optional, Protocol
 
 from loom.config import LLMConfig, llm_config
 from loom.contracts import TaskSpec
-from loom.envs import ToolSchema
+from loom.envs import EnvFault, ToolSchema
 
 STRATEGIES = ["correct", "missing_fill", "wrong_column", "process_violation"]
 
@@ -111,8 +111,12 @@ class LLMPolicy:
                 self.usage["prompt_tokens"] += resp.usage.prompt_tokens or 0
                 self.usage["completion_tokens"] += resp.usage.completion_tokens or 0
             data = json.loads(resp.choices[0].message.content)
-        except Exception as e:
-            return {"name": "submit", "args": {}, "thought": f"LLM error: {e}"}
+        except Exception as e:  # noqa: BLE001
+            # LLM 代理故障（超时/限流/鉴权/网络/响应非 JSON）= 上游基建噪声，不是模型的合法决策。
+            # 绝不能静默返回 "submit"（=_DONE_NAMES）把它伪装成"模型跑完了"的 COMPLETED 负样本——
+            # 那会让一次 API 抖动漏成训练信号。抛 EnvFault → runner 归 ENV_FAULT（重试；耗尽 quarantine），
+            # 结构上排除出数据集。只有模型主动 {"done":true} 才算合法结束。
+            raise EnvFault(f"LLM proxy fault: {type(e).__name__}: {e}") from e
 
         if data.get("done"):
             return None

@@ -109,7 +109,7 @@
     {
       "check_id": "read_before_write",
       "weight": 1.0,
-      "required": false,
+      "required": true,
       "spec": {
         "kind": "process",
         "op": "tool_preceded_by",
