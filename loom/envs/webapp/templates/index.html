@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="zh">
+<head>
+  <meta charset="utf-8" />
+  <title>Loom · Inbox & Sheet</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}" />
+</head>
+<body>
+  <header>
+    <h1>Loom Workspace</h1>
+    <span class="muted">单实例真实环境 · 邮件 + 表格</span>
+  </header>
+
+  <main>
+    <!-- 左：邮件收件箱 -->
+    <section id="inbox" class="panel">
+      <h2>收件箱</h2>
+      <article id="email" data-email-id="{{ email.id }}">
+        <div class="row"><span class="label">From</span><span id="email-from">{{ email.from }}</span></div>
+        <div class="row"><span class="label">Subject</span><span id="email-subject">{{ email.subject }}</span></div>
+        <div class="row"><span class="label">Status</span>
+          <span id="email-status" data-status="{{ email.status }}">{{ email.status }}</span></div>
+        <pre id="email-body">{{ email.body }}</pre>
+        <div class="actions">
+          <button id="read-email" type="button">阅读邮件</button>
+          <button id="mark-done" type="button">标记已处理</button>
+        </div>
+      </article>
+    </section>
+
+    <!-- 右：表格 -->
+    <section id="sheet" class="panel">
+      <h2 id="sheet-name" data-name="{{ sheet_name }}">{{ sheet_name }}</h2>
+      <table id="sheet-table">
+        <thead>
+          <tr>
+            <th></th>
+            {% for h in headers %}<th>{{ h }}</th>{% endfor %}
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="sheet-body">
+          <!-- 渲染 n 行（含表头行 n=1 与数据行 n>=2）。n=1 只读展示，n>=2 可写。 -->
+          {% set max_row = namespace(v=1) %}
+          {% for key in cells.keys() %}
+            {% set n = key[1:] | int %}
+            {% if n > max_row.v %}{% set max_row.v = n %}{% endif %}
+          {% endfor %}
+          {% for n in range(1, max_row.v + 2) %}
+          <tr data-row="{{ n }}">
+            <td class="rownum">{{ n }}</td>
+            {% if n == 1 %}
+              <td><span id="cell-A{{ n }}">{{ cells.get('A' ~ n, '') }}</span></td>
+              <td><span id="cell-B{{ n }}">{{ cells.get('B' ~ n, '') }}</span></td>
+            {% else %}
+              <td><input id="cell-A{{ n }}" data-cell="A{{ n }}" class="cell"
+                         value="{{ cells.get('A' ~ n, '') }}" /></td>
+              <td><input id="cell-B{{ n }}" data-cell="B{{ n }}" class="cell"
+                         value="{{ cells.get('B' ~ n, '') }}" /></td>
+            {% endif %}
+            <td>
+              {% if n >= 2 %}
+              <button class="delete-row" id="delete-row-{{ n }}" data-row="{{ n }}" type="button">删除</button>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </section>
+  </main>
+
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>

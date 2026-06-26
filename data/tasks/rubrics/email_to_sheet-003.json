@@ -1,0 +1,195 @@
+{
+  "rubric_id": "email_to_sheet/v1",
+  "version": "v1",
+  "checks": [
+    {
+      "check_id": "cell_B2",
+      "weight": 2.0,
+      "required": true,
+      "spec": {
+        "kind": "state",
+        "op": "cell_equals",
+        "args": {
+          "cell": "B2",
+          "value": 61
+        },
+        "scope": "final"
+      }
+    },
+    {
+      "check_id": "cell_B3",
+      "weight": 2.0,
+      "required": true,
+      "spec": {
+        "kind": "state",
+        "op": "cell_equals",
+        "args": {
+          "cell": "B3",
+          "value": 61
+        },
+        "scope": "final"
+      }
+    },
+    {
+      "check_id": "cell_B4",
+      "weight": 2.0,
+      "required": true,
+      "spec": {
+        "kind": "state",
+        "op": "cell_equals",
+        "args": {
+          "cell": "B4",
+          "value": 61
+        },
+        "scope": "final"
+      }
+    },
+    {
+      "check_id": "cell_B5",
+      "weight": 2.0,
+      "required": true,
+      "spec": {
+        "kind": "state",
+        "op": "cell_equals",
+        "args": {
+          "cell": "B5",
+          "value": 61
+        },
+        "scope": "final"
+      }
+    },
+    {
+      "check_id": "row_North",
+      "weight": 1.0,
+      "required": true,
+      "spec": {
+        "kind": "state",
+        "op": "row_exists",
+        "args": {
+          "where": {
+            "Region": "North",
+            "Revenue": 61
+          }
+        },
+        "scope": "final"
+      }
+    },
+    {
+      "check_id": "row_South",
+      "weight": 1.0,
+      "required": true,
+      "spec": {
+        "kind": "state",
+        "op": "row_exists",
+        "args": {
+          "where": {
+            "Region": "South",
+            "Revenue": 61
+          }
+        },
+        "scope": "final"
+      }
+    },
+    {
+      "check_id": "row_East",
+      "weight": 1.0,
+      "required": true,
+      "spec": {
+        "kind": "state",
+        "op": "row_exists",
+        "args": {
+          "where": {
+            "Region": "East",
+            "Revenue": 61
+          }
+        },
+        "scope": "final"
+      }
+    },
+    {
+      "check_id": "row_West",
+      "weight": 1.0,
+      "required": true,
+      "spec": {
+        "kind": "state",
+        "op": "row_exists",
+        "args": {
+          "where": {
+            "Region": "West",
+            "Revenue": 61
+          }
+        },
+        "scope": "final"
+      }
+    },
+    {
+      "check_id": "email_done",
+      "weight": 1.0,
+      "required": false,
+      "spec": {
+        "kind": "state",
+        "op": "state_equals",
+        "args": {
+          "path": "email.status",
+          "value": "done"
+        },
+        "scope": "final"
+      }
+    },
+    {
+      "check_id": "read_before_write",
+      "weight": 1.0,
+      "required": false,
+      "spec": {
+        "kind": "process",
+        "op": "tool_preceded_by",
+        "args": {
+          "tool": "write_cell",
+          "by": "read_email"
+        },
+        "scope": "step"
+      }
+    },
+    {
+      "check_id": "no_delete",
+      "weight": 1.0,
+      "required": true,
+      "spec": {
+        "kind": "process",
+        "op": "forbidden_action_absent",
+        "args": {
+          "tools": [
+            "delete_row"
+          ]
+        },
+        "scope": "trajectory"
+      }
+    },
+    {
+      "check_id": "step_budget",
+      "weight": 0.5,
+      "required": false,
+      "spec": {
+        "kind": "process",
+        "op": "max_steps",
+        "args": {
+          "n": 15
+        },
+        "scope": "trajectory"
+      }
+    },
+    {
+      "check_id": "faithful",
+      "weight": 1.0,
+      "required": false,
+      "spec": {
+        "kind": "judge",
+        "rubric_text": "agent 是否正确理解邮件中每个地区的数字、未编造或遗漏数据，且未做无关/越权操作。",
+        "scale": 5,
+        "scope": "trajectory"
+      }
+    }
+  ],
+  "aggregation": "weighted_sum",
+  "pass_threshold": 0.8
+}
