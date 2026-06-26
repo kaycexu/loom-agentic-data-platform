@@ -37,6 +37,21 @@ from loom.envs.base import BROWSER_HEAVY, EnvFault, ToolSchema
 _TOOL_ERRORS = (ValueError, KeyError, TypeError)
 
 
+def _classify_step_exception(exc: BaseException) -> str:
+    """把 step 期间的异常分成 "tool"（策略侧合法反馈）或 "fault"（基建故障）。
+
+    纯函数、仅按异常**类型**判定，不查 is_alive()——这是核心不变式的关键：
+    只有显式的工具/参数校验错（_TOOL_ERRORS）才算策略反馈进 obs["error"]；
+    其余一切未预期异常（Playwright 超时/HTTP 失败/前端回归/JSON 解析失败/任意 RuntimeError…）
+    一律默认 "fault" → raise EnvFault，绝不靠"进程恰好还活着"把基建噪声降级成 reward 信号。
+
+    边界：json.JSONDecodeError 虽是 ValueError 的子类，但语义上是「后端响应/状态解析坏了」
+    的基建/数据故障，不是策略的工具校验错——显式归 fault，不让它沿 ValueError 漏成 tool。"""
+    if isinstance(exc, json.JSONDecodeError):
+        return "fault"
+    return "tool" if isinstance(exc, _TOOL_ERRORS) else "fault"
+
+
 def _free_port() -> int:
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.bind(("127.0.0.1", 0))
@@ -138,27 +153,20 @@ class BrowserEnv:
         if not self.is_alive():
             raise EnvFault("环境不可用：浏览器/Flask 子进程已退出或 page 已关闭")
 
+        # 同一 try 覆盖动作分发 + 成功后读回 observation：
+        # 读回时环境崩（Playwright/HTTP/JSON 解析异常）也按下方规则归为 fault。
         try:
             result = self._dispatch(name, args)
-        except _TOOL_ERRORS as e:
-            # 工具级错误（未知工具、缺参/参数非法）→ 合法的策略侧负反馈，不 raise。
-            obs = self._observe(f"error: {e}")
-            obs["error"] = str(e)
-            return obs
-        except Exception as e:
-            # 其它异常（多半是 playwright/HTTP 抛错）：若环境已死则归为基建故障，
-            # 否则视为工具语义错（被后端拒绝等），仍作为正常 observation 返回。
-            if not self.is_alive():
-                raise EnvFault(f"step 期间环境崩溃: {e}") from e
-            obs = self._observe(f"error: {e}")
-            obs["error"] = str(e)
-            return obs
-
-        # 动作执行成功，但构造 observation 需读回真实状态——若此时环境崩了→ 基建故障。
-        try:
             return self._observe(result)
         except Exception as e:
-            raise EnvFault(f"读取 observation 时环境崩溃: {e}") from e
+            # 仅显式工具/参数校验错算策略反馈；其余未预期异常一律 EnvFault——
+            # 绝不再用 is_alive()==True 把基建噪声（超时/HTTP/前端回归/JSON 解析失败）
+            # 降级成 obs 反馈，否则会漏进 reward 信号（违反核心不变式）。
+            if _classify_step_exception(e) == "tool":
+                obs = self._observe(f"error: {e}")
+                obs["error"] = str(e)
+                return obs
+            raise EnvFault(f"step 期间环境故障: {e}") from e
 
     def get_state(self) -> dict[str, Any]:
         """从真实页面会话里读回状态（浏览器上下文内 fetch /state）。"""

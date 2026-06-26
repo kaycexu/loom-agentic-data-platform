@@ -43,10 +43,15 @@ class RunStore:
                  res.report.total_reward, res.attempts, res.trajectory.trace_id,
                  res.model_dump_json()),
             )
-            # 两类故障终态都落库可追溯：dead（HARNESS 耗尽）/ quarantined（ENV 耗尽）。
+            # 先清旧故障行：同 run_id/task_id 若上次失败、本次（如 resume）成功，
+            # 必须删掉旧 fault_letter，否则审计会把已完成 task 仍报告为 dead/quarantined。
+            self._conn.execute(
+                "DELETE FROM fault_letter WHERE run_id=? AND task_id=?",
+                (res.run_id, res.task_id))
+            # 两类故障终态才落库可追溯：dead（HARNESS 耗尽）/ quarantined（ENV 耗尽）。
             if res.status in ("dead", "quarantined"):
                 self._conn.execute(
-                    "INSERT OR REPLACE INTO fault_letter VALUES(?,?,?,?,?)",
+                    "INSERT INTO fault_letter VALUES(?,?,?,?,?)",
                     (res.run_id, res.task_id, res.status, res.attempts, res.error or ""),
                 )
             self._conn.commit()

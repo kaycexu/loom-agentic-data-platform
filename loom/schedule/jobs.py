@@ -16,7 +16,7 @@
 from __future__ import annotations
 
 import time
-from typing import Optional
+from typing import Any, Optional
 
 from pydantic import BaseModel, Field
 
@@ -53,7 +53,11 @@ class JobResult(BaseModel):
     outcome: Outcome = Outcome.COMPLETED
     # status：生命周期处置——completed（有合法信号）| quarantined（env 故障耗尽）| dead（harness 故障耗尽）。
     status: str = "completed"
-    duration_s: float = 0.0
+    duration_s: float = 0.0  # 末次 attempt 的 wall time（向后兼容；重试时不含被恢复掉的前几次）
+    # 真实资源消耗会计：把多次 attempt 全计入，避免重试抖动/耗尽失败被折叠隐藏。
+    total_duration_s: float = 0.0  # 全部 attempt 的 wall time 之和（成本/吞吐口径）
+    # 每次 attempt 的逐条明细：{"attempt": int, "outcome": str, "duration_s": float}
+    attempts_detail: list[dict[str, Any]] = Field(default_factory=list)
     error: Optional[str] = None
 
     @property
@@ -165,14 +169,25 @@ def _finalize(res: JobResult) -> JobResult:
 
 def run_job_with_retries(job: Job, max_attempts: int = 2) -> JobResult:
     """按 Outcome 路由重试：只对基建/我方故障幂等重试，绝不重试"模型真错了"；
-    耗尽则按故障类型进 quarantine / dead-letter，绝不静默丢弃。模块级，可被进程池 pickle 调用。"""
+    耗尽则按故障类型进 quarantine / dead-letter，绝不静默丢弃。模块级，可被进程池 pickle 调用。
+
+    诚实资源会计：每次 attempt（含异常/HARNESS 路径）单独计 wall time，逐条记入 attempts_detail，
+    total_duration_s 累加全部 attempt——重试恢复的抖动与耗尽失败的真实消耗都不被折叠隐藏。"""
     res: JobResult | None = None
+    attempts_detail: list[dict[str, Any]] = []
     for k in range(1, max_attempts + 1):
+        a0 = time.perf_counter()
         try:
             res = execute_job(job)
         except Exception as e:  # noqa: BLE001 — 未预期异常 = 我方故障
             res = _harness_fault_result(job, f"{type(e).__name__}: {e}")
+        attempt_dur = round(time.perf_counter() - a0, 4)
         res.attempts = k
+        res.duration_s = attempt_dur  # 末次 attempt 的 wall time（口径统一，向后兼容）
+        attempts_detail.append(
+            {"attempt": k, "outcome": str(res.outcome.value), "duration_s": attempt_dur})
+        res.attempts_detail = list(attempts_detail)
+        res.total_duration_s = round(sum(a["duration_s"] for a in attempts_detail), 4)
         if res.outcome in RETRYABLE_OUTCOMES and k < max_attempts:
             time.sleep(_backoff(k, job.seq))
             continue

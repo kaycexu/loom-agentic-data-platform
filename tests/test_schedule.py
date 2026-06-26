@@ -3,6 +3,9 @@
 from __future__ import annotations
 
 import pickle
+import time
+
+import pytest
 
 from loom.schedule import (
     Job,
@@ -147,3 +150,81 @@ def test_cost_model_heterogeneous():
     # 昂贵类单位成本高于轻量类（成本主导项的结构性体现，与 duration 无关、确定性）。
     assert by["browser_heavy"]["unit_cost_per_min"] > by["light"]["unit_cost_per_min"]
     assert cm["est_total_usd"] >= 0.0
+
+
+# —— 重试会计不被折叠（medium-1）——
+
+def test_retry_attempts_not_collapsed_in_accounting():
+    # HARNESS 耗尽（llm 无 key）会重试到 max_attempts；rollout_attempts 须计入每次 attempt，
+    # 不被折叠成 task 数。attempts_detail/total_duration_s 也逐次累计。
+    tasks = canonical_tasks()[:3]
+    res = schedule_tasks(tasks, policy_for=lambda t, i: "llm", class_for=_light,
+                         max_attempts=2, run_id="retry")
+    s = res.summary
+    assert s["attempted"] == 3                       # task 数（折叠视图）
+    assert s["rollout_attempts"] == 6                # 3 task × 2 attempt（真实执行次数）
+    assert s["rollout_attempts"] > s["attempted"]    # 重试没被会计折叠隐藏
+    for r in res.job_results:
+        assert r.attempts == 2
+        assert len(r.attempts_detail) == 2           # 每次 attempt 一条明细
+        assert all(d["outcome"] == "harness_fault" for d in r.attempts_detail)
+        # total 是全部 attempt 之和，≥ 末次 duration（折叠口径会低报）
+        assert r.total_duration_s >= r.duration_s
+
+
+def test_cost_model_counts_all_attempts(monkeypatch):
+    # 用可控 sleep 的 fake execute_job 走 HARNESS 重试路径：成本须按 total_duration_s
+    # （全部 attempt 之和）计，严格 > 仅算单次 duration_s 的折叠口径。
+    import loom.schedule.jobs as jobs_mod
+
+    sleep_s = 0.01
+
+    def _slow_harness(job):
+        time.sleep(sleep_s)
+        raise RuntimeError("injected harness fault for cost accounting")
+
+    monkeypatch.setattr(jobs_mod, "execute_job", _slow_harness)
+    tasks = canonical_tasks()[:2]
+    res = schedule_tasks(tasks, policy_for=_mock_correct, class_for=_light,
+                         max_attempts=3, run_id="cost", executor="async")
+    s = res.summary
+    assert s["rollout_attempts"] == 6                # 2 task × 3 attempt
+    # 成本口径（total_duration_s 之和）≈ 6 × sleep；远大于只算末次（2 × sleep）的折叠口径。
+    total_minutes = sum(r.total_duration_s for r in res.job_results) / 60.0
+    last_only_minutes = sum(r.duration_s for r in res.job_results) / 60.0
+    cm = s["cost_model"]
+    light_minutes = cm["by_resource_class"]["light"]["minutes"]
+    assert light_minutes > last_only_minutes  # 计入了多次 attempt（非折叠口径）
+    # cost_model 的分钟数 == 全部 attempt 的 total_duration_s 之和（容忍 round(,4) 舍入）。
+    assert light_minutes == pytest.approx(total_minutes, abs=1e-4)
+    assert cm["est_total_usd"] > 0.0
+
+
+# —— fault_letter 生命周期：resume 成功后清旧行（medium-2）——
+
+def test_resume_success_clears_stale_fault_letter(tmp_path):
+    db = str(tmp_path / "lifecycle.db")
+    tasks = canonical_tasks()[:3]
+    target = tasks[0].task_id
+
+    # run1：全部用 llm（无 key）→ HARNESS dead，task[0] 进 fault_letter。
+    schedule_tasks(tasks, policy_for=lambda t, i: "llm", class_for=_light,
+                   max_attempts=2, run_id="lc", store_path=db)
+    store = RunStore(db)
+    try:
+        assert any(d["task_id"] == target for d in store.dead_letters("lc"))  # run1 后确在 dead 表
+        assert target not in store.completed_task_ids("lc")
+    finally:
+        store.close()
+
+    # run2：同 run_id resume，改 mock:correct → 全部成功。dead 不是 completed，故会被重跑。
+    schedule_tasks(tasks, policy_for=_mock_correct, class_for=_light,
+                   run_id="lc", store_path=db, resume=True)
+    store = RunStore(db)
+    try:
+        # 旧 fault_letter 行已清：不再把已完成 task 报告为 dead（审计自洽）。
+        assert all(d["task_id"] != target for d in store.dead_letters("lc"))
+        assert store.dead_letters("lc") == []
+        assert target in store.completed_task_ids("lc")
+    finally:
+        store.close()

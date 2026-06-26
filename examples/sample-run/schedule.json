@@ -4,8 +4,8 @@
   "total": 1000,
   "ran_now": 1000,
   "resumed_skipped": 0,
-  "wall_clock_s": 0.179,
-  "throughput_per_s": 5591.3,
+  "wall_clock_s": 0.184,
+  "throughput_per_s": 5431.6,
   "configured_caps": {
     "light": 128,
     "browser_heavy": 8
@@ -24,6 +24,7 @@
     "light": 950
   },
   "attempted": 1000,
+  "rollout_attempts": 1000,
   "completed": 1000,
   "policy_error": 0,
   "env_fault_quarantined": 0,
@@ -33,13 +34,13 @@
       "light": 0.002,
       "browser_heavy": 0.05
     },
-    "est_total_usd": 1.1e-05,
-    "est_per_1k_usd": 1.1e-05,
+    "est_total_usd": 1.2e-05,
+    "est_per_1k_usd": 1.2e-05,
     "by_resource_class": {
       "browser_heavy": {
-        "minutes": 0.0001,
+        "minutes": 0.0002,
         "unit_cost_per_min": 0.05,
-        "est_usd": 7e-06
+        "est_usd": 8e-06
       },
       "light": {
         "minutes": 0.0021,

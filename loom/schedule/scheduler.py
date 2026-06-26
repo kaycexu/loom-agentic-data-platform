@@ -30,13 +30,14 @@ _DEFAULT_UNIT_COST_PER_MIN = 0.01  # 未知资源类的兜底单价
 
 
 def _build_cost_model(all_results: list[JobResult], attempted: int) -> dict[str, Any]:
-    """据各 rollout 的累计 duration_s 按资源类估算成本。确定性、可复现。
+    """据各 rollout 的累计 total_duration_s 按资源类估算成本。确定性、可复现。
 
-    所有 attempt（含 quarantined/dead）都真实消耗了资源，故成本按 *全部* all_results 统计。"""
+    所有 attempt（含重试、含 quarantined/dead）都真实消耗了资源，故按 total_duration_s
+    （全部 attempt 之和，而非末次 duration_s）统计——重试抖动与耗尽失败的真实成本不被折叠隐藏。"""
     minutes_by_class: dict[str, float] = {}
     for r in all_results:
         minutes_by_class[r.resource_class] = (
-            minutes_by_class.get(r.resource_class, 0.0) + r.duration_s / 60.0
+            minutes_by_class.get(r.resource_class, 0.0) + r.total_duration_s / 60.0
         )
     by_resource_class: dict[str, dict[str, float]] = {}
     est_total = 0.0
@@ -136,7 +137,8 @@ def schedule_tasks(
         # 容量视图：仍按全部 all_results 统计（每个 attempt 都占用过资源）。
         "by_resource_class": dict(Counter(r.resource_class for r in all_results)),
         # —— 诚实会计 ——
-        "attempted": attempted,              # 全部结果数（含 quarantined/dead）
+        "attempted": attempted,              # 全部 task 结果数（含 quarantined/dead）；每 task 折叠成 1 条
+        "rollout_attempts": sum(r.attempts for r in all_results),  # 含重试的真实 rollout 执行次数（≥attempted）
         "completed": completed,              # SIGNAL 数（status=="completed"）
         "policy_error": policy_error,        # completed 中 outcome==POLICY_ERROR 的子集
         "env_fault_quarantined": len(quarantined),  # env 故障耗尽被隔离的数量
