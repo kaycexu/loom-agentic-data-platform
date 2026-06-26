@@ -31,7 +31,7 @@ flowchart LR
   end
   subgraph META["③ 质量元层 + 编排"]
     Q["Quality 元层\n混淆矩阵/误收/误拒/泄露"]
-    S["Scheduler\n资源感知并发+隔离\n(1k 模拟)"]
+    S["Scheduler\nJob抽象+可插拔executor\nasync/process/k8s · 续跑 · OTel"]
     D["Trace + 看板"]
   end
   T --> ENV --> ROLL --> VER --> CUR
@@ -73,8 +73,17 @@ loom demo                                # 产物在 out/demo/，打开 out/demo
 loom eval-verifier                       # 在 gold 集上度量验证器（最强信号）
 loom run --policy mock-all               # 生成→验证→筛选→导出数据集 + 看板
 loom run --browser --policy mock:correct --limit 1   # 用真实 Playwright 浏览器环境
-loom scale --n 1000                      # 规模/并发模拟（资源感知调度）
+loom scale --n 1000 --executor async     # 规模/并发（async 队列+信号量）
+loom scale --n 1000 --executor process   # 真进程池隔离
+loom scale --n 1000 --store out/run.db   # 持久化；中断后加 --resume 断点续跑
 loom report --run out/demo               # 重新渲染看板
+loom k8s-manifest --n 3                   # 渲染 1 rollout=1 Pod 的样例 manifest
+```
+
+可观测（OpenTelemetry）：任意命令加 `--otel console`（离线看 span 树）或 `--otel otlp`（→ Jaeger）。
+```bash
+docker compose -f deploy/docker-compose.yaml up -d     # 起 Jaeger（OTLP:4318, UI:16686）
+pip install -e ".[obs]" && LOOM_OTEL=otlp loom demo    # http://localhost:16686 看 trace 树
 ```
 
 无 GPU、无 LLM key 也能完整跑通（judge 会**诚实跳过**，不伪造分数）。要开真实 LLM：
@@ -96,7 +105,9 @@ loom run --policy llm --limit 2 --browser
 | 预期失败命中率 | 100% |
 | 数据集筛选 | 20 条候选 → 留 5 条（只留验证通过的正确轨迹） |
 | 1k 规模 | 跑完，吞吐 ~9k/s，峰值并发严格不超上限（browser_heavy≤8, light≤128） |
-| 测试 | `pytest` 9 passed（含真实 Playwright 浏览器用例） |
+| 调度 | async/process executor、断点续跑（重跑跳过已完成）、dead-letter 不丢弃，均有回归测试 |
+| 可观测 | OTel span 树跨线程/进程统一 trace（`--otel console/otlp→Jaeger`） |
+| 测试 | `pytest` 21 passed（verify / quality / report / browser / schedule / obs） |
 
 **最能说明问题的一条**：`process_violation` 策略——终态数值完全正确，reward 0.84（高于 0.8 阈值）——但因为它**没先读邮件就写入（幻觉风险）**且**调用了禁用的 `delete_row`**，被 `read_before_write`（PRM step 级）和红线 `no_delete` 抓出，**强制判 fail**。这正是"outcome-only 验证不够、必须有过程/PRM 验证"的铁证。见 `examples/sample-run/`。
 
@@ -113,8 +124,9 @@ loom run --policy llm --limit 2 --browser
 | BrowserEnv（Flask + Playwright 真实驱动） | 🟡 最小真实（1 domain 闭环） |
 | Curator + 三格式导出 + manifest | 🟡 真跑 |
 | LLMPolicy 真模型 | 🟡 optional 佐证（需 key） |
-| Scheduler 调度（信号量/隔离/重试/吞吐） | ⚪ 轻量真实；1k 用 MockPolicy 模拟 |
-| 其它 env 类型 / K8s·checkpoint·退避 | ⚪ 接口 / 文档映射 |
+| Scheduler（Job 抽象 + async/process executor + 优先级/背压 + 退避重试 + dead-letter） | 🟡 真跑；1k 用 MockPolicy 模拟 |
+| 持久化续跑（SQLite run store）/ OTel 链路追踪（console/OTLP→Jaeger） | 🟡 真跑 |
+| K8s executor / 其它 env 类型 | ⚪ manifest seam / 接口 |
 
 设计**刻意把深度压在验证侧**：对模型公司而言，能精准区分对/错、红线零泄露的验证器，比"能跑 agent"重要得多。
 
@@ -129,25 +141,32 @@ loom/
   envs/        Environment 接口 + SheetEmailEnv(轻量) + BrowserEnv(Playwright) + webapp(Flask)
   rollout/     Rollout runner + MockPolicy(4策略) + LLMPolicy + 安全 hooks
   verify/      ★Verifier 引擎：checks(state/process) + judge(LLM) + engine(聚合/红线/PRM)
-  schedule/    资源感知并发调度（asyncio 信号量 + 隔离 + 重试 + 吞吐统计）
+  schedule/    Job 抽象 + 可插拔 executor(async/process) + SQLite 续跑 + dead-letter + k8s manifest seam
+  obs/         OpenTelemetry 链路追踪（off/console/otlp→Jaeger，no-op 安全）
   curate/      筛选/去重/配平 → SFT / RL / Task+Rubric bundle + manifest
   quality/     gold 集构造 + 验证器可靠性度量
   trace/       JSONL 可追溯 + 静态 HTML 看板
   cli.py       typer 入口
 docs/design.md 设计文档（含 Codex plan-review 修订）
+deploy/        Jaeger docker-compose + k8s Job manifest 样例 + 部署/扩展说明
 data/tasks/    声明式任务 + rubric 文件
 examples/      看板/环境截图 + 一个 sample run 产物
-tests/         pytest（verify / quality / browser）
+tests/         pytest（verify / quality / report / browser / schedule / obs）
 ```
 
 ---
 
-## 并发 / 隔离 / 规模（设计当真）
+## 并发 / 隔离 / 规模 / 可观测（真实实现）
 
-- **隔离**：每个 rollout 独占自己的 env 实例（BrowserEnv 用独立 browser context），rollout 间零共享可变状态。
-- **资源感知**：按 env 的 `resource_profile` 分级限流——`browser_heavy`（重内存）少并发，`light` 多并发。用 per-class `asyncio.Semaphore` 实现，1k 压测峰值并发严格不超上限。
-- **弹性**：超时 + 有限次重试 + 幂等 `trace_id`。
-- **横向扩展映射**：本地 asyncio 池是单机 stand-in；真实部署时 **1 rollout = 1 K8s Job/Pod**，资源 request 匹配 profile，scheduler 变 controller，结果汇聚对象存储。checkpoint 续跑、指数退避在此映射下补齐（本仓库刻意不镀金）。
+调度层围绕一个**可序列化的 `Job` 抽象 + 模块级 `execute_job` 入口**，因此同一个 rollout 能在三种隔离层级上跑（细节与命令见 [`deploy/README.md`](deploy/README.md)）：
+
+- **可插拔 Executor**：
+  - `async`（默认）—— 优先级队列 + N worker + per-class `asyncio.Semaphore` + 背压；in-process 线程隔离，OTel 全 span 树。
+  - `process` —— 每个资源类一个进程池（size = 并发上限）→ 真 OS 进程隔离 + 多核。
+  - **K8s seam** —— `loom k8s-manifest` 把每个 Job 渲染成 "1 rollout = 1 Job/Pod" 的 manifest（资源 request 按 `resource_class`），Pod 入口即 `loom run-job`。
+- **隔离**：每个 rollout 独占 env 实例（BrowserEnv 用独立 browser context / process executor 用独立进程），零共享可变状态。1k 压测峰值并发严格不超上限。
+- **弹性**：指数退避重试 + **dead-letter**（耗尽进 `status='dead'`，可追溯不丢弃）+ **SQLite run store 断点续跑**（同 `run_id --resume` 幂等跳过已完成）。
+- **链路追踪（OpenTelemetry）**：`loom.schedule → loom.rollout → loom.step` 与 `loom.verify → loom.check` 的 span 树，跨线程/跨进程统一在一条 trace；`--otel console` 离线可看，`--otel otlp` → Jaeger（`deploy/docker-compose.yaml`）。
 
 ---
 

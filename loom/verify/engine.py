@@ -18,6 +18,7 @@ from loom.contracts import (
     TaskSpec,
     Trajectory,
 )
+from loom.obs import span
 from loom.verify.checks import check_process, check_state
 from loom.verify.judge import JudgeClient, StubJudge
 
@@ -32,42 +33,52 @@ class Verifier:
         results: list[CheckResult] = []
         step_signals: list[tuple[int, float]] = []  # (step_index, score)
 
-        for rc in rubric.checks:
-            kind = rc.spec.kind
-            if kind == "state":
-                cr, ps = check_state(rc, traj)
-            elif kind == "process":
-                cr, ps = check_process(rc, traj)
-            elif kind == "judge":
-                cr = self._judge(rc, task, traj)
-                ps = []
-            else:  # pragma: no cover
-                raise ValueError(f"未知 check kind: {kind}")
-            results.append(cr)
-            step_signals.extend(ps)
+        with span("loom.verify", **{"loom.task_id": task.task_id, "loom.rubric": rubric.rubric_id}) as vspan:
+            for rc in rubric.checks:
+                kind = rc.spec.kind
+                with span("loom.check", **{"loom.check_id": rc.check_id, "loom.kind": kind,
+                                           "loom.required": rc.required}) as cspan:
+                    if kind == "state":
+                        cr, ps = check_state(rc, traj)
+                    elif kind == "process":
+                        cr, ps = check_process(rc, traj)
+                    elif kind == "judge":
+                        cr = self._judge(rc, task, traj)
+                        ps = []
+                    else:  # pragma: no cover
+                        raise ValueError(f"未知 check kind: {kind}")
+                    if cspan is not None:
+                        cspan.set_attribute("loom.passed", cr.passed)
+                        cspan.set_attribute("loom.score", cr.score)
+                        cspan.set_attribute("loom.skipped", cr.skipped)
+                results.append(cr)
+                step_signals.extend(ps)
 
-        scored = [r for r in results if not r.skipped]
-        wsum = sum(r.weight for r in scored) or 1.0
-        total = sum(r.weight * r.score for r in scored) / wsum
+            scored = [r for r in results if not r.skipped]
+            wsum = sum(r.weight for r in scored) or 1.0
+            total = sum(r.weight * r.score for r in scored) / wsum
 
-        # fail-closed：required check 即使被 skip（judge 无 LLM/出错）也算 fail。
-        # 绝不能让"没真正跑的强制检查"放行——这是守住 leakage=0 / 红线边界的关键。
-        # （skipped 的 CheckResult.passed 已为 False，此处不再排除 skipped。）
-        required_ok = all(r.passed for r in results if r.required)
-        passed = required_ok and (total >= rubric.pass_threshold)
+            # fail-closed：required check 即使被 skip（judge 无 LLM/出错）也算 fail。
+            # 绝不能让"没真正跑的强制检查"放行——这是守住 leakage=0 / 红线边界的关键。
+            # （skipped 的 CheckResult.passed 已为 False，此处不再排除 skipped。）
+            required_ok = all(r.passed for r in results if r.required)
+            passed = required_ok and (total >= rubric.pass_threshold)
+            step_rewards = self._step_rewards(traj, step_signals)
 
-        step_rewards = self._step_rewards(traj, step_signals)
+            if vspan is not None:
+                vspan.set_attribute("loom.total_reward", round(total, 4))
+                vspan.set_attribute("loom.passed", passed)
 
-        return RewardReport(
-            task_id=task.task_id,
-            trace_id=traj.trace_id,
-            total_reward=round(total, 4),
-            passed=passed,
-            step_rewards=step_rewards,
-            checks=results,
-            verifier_version=VERIFIER_VERSION,
-            policy=traj.policy,
-        )
+            return RewardReport(
+                task_id=task.task_id,
+                trace_id=traj.trace_id,
+                total_reward=round(total, 4),
+                passed=passed,
+                step_rewards=step_rewards,
+                checks=results,
+                verifier_version=VERIFIER_VERSION,
+                policy=traj.policy,
+            )
 
     def _judge(self, rc, task: TaskSpec, traj: Trajectory) -> CheckResult:
         spec = rc.spec

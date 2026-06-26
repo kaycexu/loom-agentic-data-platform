@@ -1,145 +1,100 @@
-"""Scheduler —— 资源感知 / 隔离 / 并发 / 轻量重试（设计当真，代码轻量）。
+"""调度编排 —— 把 Tasks 变成 Jobs，交给可插拔 Executor 跑，统一收口。
 
-并发模型：
-- 每资源类一把 asyncio.Semaphore（browser_heavy 少并发 / light 多并发），
-  避免重环境打爆内存。
-- 每个 rollout 独占自己的 env 实例（env_factory 每次新建）→ 零共享可变状态 = 隔离。
-- 同步的 rollout/verify 用 asyncio.to_thread 投入线程池，被信号量真实限流。
-- 有限次重试（异常时），峰值并发 / 吞吐 / 通过率全程统计。
-
-横向扩展映射（README）：1 rollout = 1 K8s Job/Pod，scheduler = controller，
-本地 asyncio 池是单机 stand-in。
+职责：建 Job（注入 OTel carrier 做跨线程/进程 trace 传播）、断点续跑（按 store 跳过已完成）、
+跑 executor、合并续跑的历史结果、产出统一 summary（吞吐/峰值并发/通过率/重试/dead-letter）。
 """
 
 from __future__ import annotations
 
-import asyncio
 import time
 from collections import Counter
 from dataclasses import dataclass, field
-from typing import Any, Callable
+from typing import Any, Callable, Optional
 
 from loom.config import DEFAULT_CONCURRENCY
-from loom.contracts import RewardReport, RubricSpec, TaskSpec, Trajectory
+from loom.contracts import TaskSpec
 from loom.curate import Record
-from loom.verify import Verifier
+from loom.obs import inject_context, span
+from loom.schedule.executor import make_executor
+from loom.schedule.jobs import Job, JobResult
+from loom.schedule.store import RunStore
 
-RolloutFn = Callable[[TaskSpec, int], Trajectory]  # (task, attempt) -> Trajectory
-Classify = Callable[[TaskSpec], str]
-RubricFor = Callable[[TaskSpec], RubricSpec]
-
-
-def default_classify(prefer_browser: bool = False) -> Classify:
-    def _c(task: TaskSpec) -> str:
-        if task.env_type == "browser" and prefer_browser:
-            return "browser_heavy"
-        return "light"
-    return _c
-
-
-@dataclass
-class RolloutStat:
-    task_id: str
-    trace_id: str
-    resource_class: str
-    status: str
-    passed: bool
-    reward: float
-    attempts: int
-    duration_s: float
+PolicyFor = Callable[[TaskSpec, int], str]
+ClassFor = Callable[[TaskSpec, int], str]
+PriorityFor = Callable[[TaskSpec, int], int]
 
 
 @dataclass
 class ScheduleResult:
-    records: list[Record] = field(default_factory=list)
-    stats: list[RolloutStat] = field(default_factory=list)
+    records: list[Record] = field(default_factory=list)  # (task, traj, report) 给下游
+    job_results: list[JobResult] = field(default_factory=list)
     summary: dict[str, Any] = field(default_factory=dict)
 
 
-async def _aschedule(
+def schedule_tasks(
     tasks: list[TaskSpec],
-    rollout_fn: RolloutFn,
-    verifier: Verifier,
-    rubric_for: RubricFor,
-    classify: Classify,
-    concurrency: dict[str, int],
-    max_attempts: int,
-) -> ScheduleResult:
-    sems = {cls: asyncio.Semaphore(cap) for cls, cap in concurrency.items()}
-    active: Counter = Counter()
-    peak: Counter = Counter()
-    res = ScheduleResult()
-    lock = asyncio.Lock()
-
-    async def worker(task: TaskSpec) -> None:
-        cls = classify(task)
-        sem = sems.setdefault(cls, asyncio.Semaphore(8))
-        async with sem:
-            async with lock:
-                active[cls] += 1
-                peak[cls] = max(peak[cls], active[cls])
-            t0 = time.perf_counter()
-            traj: Trajectory | None = None
-            attempts = 0
-            try:
-                for attempt in range(max_attempts):
-                    attempts = attempt + 1
-                    try:
-                        traj = await asyncio.to_thread(rollout_fn, task, attempt)
-                        break
-                    except Exception:
-                        if attempt == max_attempts - 1:
-                            traj = Trajectory(task_id=task.task_id, attempt=attempt, policy="error",
-                                              status="error", trace_id=f"{task.task_id}:error:{attempt}")
-                rep: RewardReport = await asyncio.to_thread(
-                    verifier.verify, task, rubric_for(task), traj)
-            finally:
-                async with lock:
-                    active[cls] -= 1
-            dur = time.perf_counter() - t0
-            async with lock:
-                res.records.append((task, traj, rep))
-                res.stats.append(RolloutStat(
-                    task_id=task.task_id, trace_id=traj.trace_id, resource_class=cls,
-                    status=traj.status, passed=rep.passed, reward=rep.total_reward,
-                    attempts=attempts, duration_s=round(dur, 4)))
-
-    wall0 = time.perf_counter()
-    await asyncio.gather(*(worker(t) for t in tasks))
-    wall = time.perf_counter() - wall0
-
-    n = len(res.stats)
-    passed = sum(1 for s in res.stats if s.passed)
-    retried = sum(1 for s in res.stats if s.attempts > 1)
-    res.summary = {
-        "total": n,
-        "wall_clock_s": round(wall, 3),
-        "throughput_per_s": round(n / wall, 1) if wall else 0.0,
-        "configured_caps": concurrency,
-        "peak_concurrency": dict(peak),
-        "pass_rate": round(passed / n, 4) if n else 0.0,
-        "passed": passed,
-        "retried": retried,
-        "by_resource_class": dict(Counter(s.resource_class for s in res.stats)),
-    }
-    return res
-
-
-def run_schedule(
-    tasks: list[TaskSpec],
-    rollout_fn: RolloutFn,
-    rubric_for: RubricFor,
-    verifier: Verifier | None = None,
-    classify: Classify | None = None,
-    concurrency: dict[str, int] | None = None,
+    *,
+    policy_for: PolicyFor,
+    class_for: ClassFor,
+    priority_for: Optional[PriorityFor] = None,
+    prefer_browser: bool = False,
+    use_judge: bool = False,
+    executor: str = "async",
+    caps: Optional[dict[str, int]] = None,
     max_attempts: int = 2,
+    run_id: str = "run",
+    store_path: Optional[str] = None,
+    resume: bool = False,
 ) -> ScheduleResult:
-    return asyncio.run(_aschedule(
-        tasks=tasks,
-        rollout_fn=rollout_fn,
-        verifier=verifier or Verifier(),
-        rubric_for=rubric_for,
-        classify=classify or default_classify(),
-        concurrency=concurrency or dict(DEFAULT_CONCURRENCY),
-        max_attempts=max_attempts,
-    ))
+    caps = caps or dict(DEFAULT_CONCURRENCY)
+    store = RunStore(store_path) if store_path else None
+    tasks_by_id = {t.task_id: t for t in tasks}
+
+    done: set[str] = store.completed_task_ids(run_id) if (store and resume) else set()
+    exec_ = make_executor(executor)
+
+    with span("loom.schedule", **{"loom.run_id": run_id, "loom.total": len(tasks),
+                                  "loom.executor": executor}):
+        carrier = inject_context()  # 以 schedule 根 span 作为各 rollout 的父
+        jobs: list[Job] = []
+        for i, t in enumerate(tasks):
+            if t.task_id in done:
+                continue
+            jobs.append(Job(
+                run_id=run_id, task=t, policy_spec=policy_for(t, i),
+                prefer_browser=prefer_browser, use_judge=use_judge,
+                resource_class=class_for(t, i),
+                priority=(priority_for(t, i) if priority_for else 100),
+                seq=i, otel_carrier=dict(carrier),
+            ))
+        t0 = time.perf_counter()
+        results, peak = exec_.run(jobs, caps, max_attempts, store=store)
+        wall = time.perf_counter() - t0
+
+    # 合并续跑：把跳过的（历史已完成）结果加回来
+    prior = [r for r in (store.load_results(run_id) if (store and resume) else []) if r.task_id in done]
+    all_results = results + prior
+
+    records: list[Record] = [
+        (tasks_by_id[r.task_id], r.trajectory, r.report)
+        for r in all_results if r.task_id in tasks_by_id
+    ]
+
+    n = len(all_results)
+    passed = sum(1 for r in all_results if r.report.passed)
+    dead = [r for r in all_results if r.status == "dead"]
+    summary = {
+        "run_id": run_id, "executor": executor, "total": n,
+        "ran_now": len(results), "resumed_skipped": len(done),
+        "wall_clock_s": round(wall, 3),
+        "throughput_per_s": round(len(results) / wall, 1) if wall else 0.0,
+        "configured_caps": caps, "peak_concurrency": peak,
+        "pass_rate": round(passed / n, 4) if n else 0.0, "passed": passed,
+        "retried": sum(1 for r in all_results if r.attempts > 1),
+        "dead_letter": len(dead),
+        "dead_letter_samples": [r.task_id for r in dead][:10],
+        "by_resource_class": dict(Counter(r.resource_class for r in all_results)),
+    }
+    if store:
+        store.close()
+    return ScheduleResult(records=records, job_results=all_results, summary=summary)

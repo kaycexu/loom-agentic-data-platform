@@ -1,0 +1,26 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: loom-rollout-email-to-sheet-000
+  labels:
+    app: loom
+    loom/resource-class: browser_heavy
+    loom/run-id: "k8s"
+spec:
+  backoffLimit: 2          # 与 max_attempts 对应：失败重试，耗尽进 dead-letter
+  ttlSecondsAfterFinished: 3600
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: rollout
+          image: loom:latest
+          args: ["run-job", "--task-id", "email_to_sheet-000", "--policy", "mock:correct"]
+          env:
+            - name: LOOM_OTEL
+              value: "otlp"
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: "http://jaeger-collector:4318"   # trace 汇聚到 Jaeger
+          resources:
+            requests: {cpu: "1", memory: "2Gi"}
+            limits: {cpu: "1", memory: "2Gi"}

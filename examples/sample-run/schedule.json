@@ -1,7 +1,11 @@
 {
+  "run_id": "demo-scale-1000",
+  "executor": "async",
   "total": 1000,
-  "wall_clock_s": 0.112,
-  "throughput_per_s": 8927.4,
+  "ran_now": 1000,
+  "resumed_skipped": 0,
+  "wall_clock_s": 0.182,
+  "throughput_per_s": 5502.4,
   "configured_caps": {
     "light": 128,
     "browser_heavy": 8
@@ -13,6 +17,8 @@
   "pass_rate": 0.7,
   "passed": 700,
   "retried": 0,
+  "dead_letter": 0,
+  "dead_letter_samples": [],
   "by_resource_class": {
     "browser_heavy": 50,
     "light": 950

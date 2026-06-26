@@ -235,11 +235,14 @@ class DatasetManifest:
 - **🟡 `LLMPolicy`（optional 佐证）**：真 Claude/GPT，tool-calling + scratchpad；仅跑 1~2 条产出"真实轨迹"截图，**不作为 demo 成败依赖**。
 - **安全**：高风险写操作走 pre-action hook 拦截（呼应 KOC 的 pre-tool-use）。
 
-### 6.4 ⚪ Scheduler / 编排（轻量演示）
-- **接口**：`schedule(tasks, policy, concurrency_config) -> list[RewardReport]`。
-- **真实保留（轻量、低成本高信号）**：每资源类一把**信号量**（`browser_heavy` 少并发 / `light` 多并发）；每 rollout 独立 env 实例、**零共享可变状态**；bounded queue 背压；简单超时 + 有限次重试；`loom scale --n 1000 --policy mock` 跑完输出**吞吐/并发摘要 + trace**。
-- **降级到文档（README 映射）**：checkpoint 续跑、指数退避、K8s（1 rollout=1 Job/Pod，scheduler=controller，结果汇对象存储）。
-- **真跑**：⚪ 调度逻辑真实但轻量；1k 规模用 MockPolicy 模拟。
+### 6.4 🟡 Scheduler / 编排（已做深，见 deploy/README.md）
+> 注：此层在初版后按"infra/调度做深"的要求做了实质扩展（原计划为 ⚪ 轻量）。
+- **Job 抽象**：可序列化 `Job` + 模块级 `execute_job` —— 同一 rollout 可在线程/进程/Pod 上跑。
+- **可插拔 Executor**：`async`（优先级队列 + N worker + per-class `asyncio.Semaphore` + 背压）/ `process`（每资源类一个进程池=该类并发上限，真 OS 进程隔离 + 多核）/ **K8s seam**（`render_job_manifest` 把 Job 渲染成 1 Pod/rollout 的 manifest，资源 request 按 profile）。
+- **隔离 + 资源感知**：每 rollout 独立 env 实例、零共享；分级并发上限严格不超。
+- **弹性**：指数退避重试 + **dead-letter**（耗尽进 `status='dead'`，可追溯不丢弃）+ **SQLite run store 断点续跑**（同 `run_id --resume` 幂等跳过已完成）。
+- **可观测**：OpenTelemetry span 树（schedule→rollout→step / verify→check），跨线程/进程统一 trace；`--otel console`/`otlp→Jaeger`。
+- **真跑 or 模拟**：调度/续跑/dead-letter/OTel 全真跑；1k 的 rollout 内容仍用 MockPolicy 模拟以省 token；K8s 为 manifest seam（不实际 apply）。
 
 ### 6.5 🟡 Curator / 数据集构建
 - **接口**：`curate(reports, trajectories, policy) -> (Dataset, DatasetManifest)`。
@@ -283,8 +286,9 @@ class DatasetManifest:
 | Curator + 导出 + manifest | 🟡 真跑 | 结构去重/计数配平 |
 | preview 看板 | 🟡 真跑 | 重解释 |
 | LLMPolicy 真模型 | 🟡 optional | 1~2 条佐证，非成败依赖 |
-| Scheduler 调度 | ⚪ 轻量 | 信号量+重试+吞吐摘要 |
-| 1k 规模 / 其它 env / K8s·checkpoint·退避 | ⚪ 模拟/文档 | — |
+| Scheduler（Job+async/process executor+优先级/背压+退避重试+dead-letter） | 🟡 真跑 | 1k rollout 用 MockPolicy |
+| 持久化续跑(SQLite) / OTel 链路追踪(console/OTLP→Jaeger) | 🟡 真跑 | — |
+| K8s executor / 其它 env 类型 / checkpoint | ⚪ manifest seam / 接口 | — |
 
 ---
 

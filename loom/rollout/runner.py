@@ -10,6 +10,7 @@ from typing import Any
 
 from loom.contracts import Step, TaskSpec, Trajectory
 from loom.envs import Environment
+from loom.obs import span
 from loom.rollout.hooks import PreActionHook
 from loom.rollout.policy import Policy
 
@@ -28,44 +29,49 @@ def run_rollout(
     max_steps = max_steps or task.max_steps
     t0 = time.perf_counter()
 
-    obs = env.reset(task.env_seed)
-    policy.reset(task, env.tools())
+    rollout_span = span("loom.rollout", **{
+        "loom.task_id": task.task_id, "loom.policy": getattr(policy, "name", "?"),
+        "loom.attempt": attempt, "loom.domain": task.domain})
+    with rollout_span:
+        obs = env.reset(task.env_seed)
+        policy.reset(task, env.tools())
 
-    steps: list[Step] = []
-    status = "max_steps"
-    for i in range(max_steps):
-        action = policy.act(obs)
-        if action is None or action.get("name") in _DONE_NAMES:
-            status = "completed"
-            break
-
-        before = obs
-        thought = action.get("thought")
-        norm_action = {"name": action.get("name"), "args": action.get("args", {}) or {}}
-
-        reason = None
-        for h in hooks:
-            reason = h(norm_action, task)
-            if reason:
+        steps: list[Step] = []
+        status = "max_steps"
+        for i in range(max_steps):
+            action = policy.act(obs)
+            if action is None or action.get("name") in _DONE_NAMES:
+                status = "completed"
                 break
 
-        if reason:  # 被拦截：记录但不执行
-            steps.append(Step(index=i, observation=before, thought=thought,
-                              action=norm_action, tool_result={"blocked": reason},
-                              error=f"blocked: {reason}"))
-            continue
+            before = obs
+            thought = action.get("thought")
+            norm_action = {"name": action.get("name"), "args": action.get("args", {}) or {}}
 
-        new_obs = env.step(norm_action)
-        steps.append(Step(index=i, observation=before, thought=thought, action=norm_action,
-                          tool_result={"last_result": new_obs.get("last_result")},
-                          error=new_obs.get("error")))
-        obs = new_obs
+            reason = None
+            for h in hooks:
+                reason = h(norm_action, task)
+                if reason:
+                    break
 
-    final_state = env.get_state()
-    try:
-        env.close()
-    except Exception:
-        pass
+            if reason:  # 被拦截：记录但不执行
+                steps.append(Step(index=i, observation=before, thought=thought,
+                                  action=norm_action, tool_result={"blocked": reason},
+                                  error=f"blocked: {reason}"))
+                continue
+
+            with span("loom.step", **{"loom.index": i, "loom.tool": norm_action.get("name") or ""}):
+                new_obs = env.step(norm_action)
+            steps.append(Step(index=i, observation=before, thought=thought, action=norm_action,
+                              tool_result={"last_result": new_obs.get("last_result")},
+                              error=new_obs.get("error")))
+            obs = new_obs
+
+        final_state = env.get_state()
+        try:
+            env.close()
+        except Exception:
+            pass
 
     cost = {
         "steps": len(steps),

@@ -15,6 +15,8 @@ dependencies = [
 browser = ["playwright>=1.44", "flask>=3.0"]
 # 真实 LLM（judge + optional LLMPolicy）。无 key 时降级到 stub judge。
 llm = ["openai>=1.30"]
+# OpenTelemetry 链路追踪（off/console 无需此 extra 也能 no-op；otlp→Jaeger 需要）。
+obs = ["opentelemetry-sdk>=1.25", "opentelemetry-exporter-otlp-proto-http>=1.25"]
 dev = ["pytest>=8.0"]
 
 [project.scripts]
