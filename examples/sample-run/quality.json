@@ -1,0 +1,417 @@
+{
+  "n_samples": 20,
+  "confusion_matrix": {
+    "tp": 5,
+    "fn": 0,
+    "fp": 0,
+    "tn": 15
+  },
+  "accuracy": 1.0,
+  "false_accept_rate": 0.0,
+  "false_reject_rate": 0.0,
+  "leakage_count": 0,
+  "leakage_rate": 0.0,
+  "leakage_samples": [],
+  "expected_failed_hit_rate": 1.0,
+  "samples": [
+    {
+      "sample_id": "email_to_sheet-000:correct",
+      "negative_type": "none",
+      "is_redline": false,
+      "should_pass": true,
+      "verifier_passed": true,
+      "reward": 1.0,
+      "correct": true,
+      "expected_failed": [],
+      "expected_hit": [],
+      "actual_failed": []
+    },
+    {
+      "sample_id": "email_to_sheet-000:missing_fill",
+      "negative_type": "missing_fill",
+      "is_redline": true,
+      "should_pass": false,
+      "verifier_passed": false,
+      "reward": 0.76,
+      "correct": true,
+      "expected_failed": [
+        "cell_B4",
+        "row_West"
+      ],
+      "expected_hit": [
+        "cell_B4",
+        "row_West"
+      ],
+      "actual_failed": [
+        "cell_B4",
+        "row_West"
+      ]
+    },
+    {
+      "sample_id": "email_to_sheet-000:wrong_column",
+      "negative_type": "wrong_column",
+      "is_redline": true,
+      "should_pass": false,
+      "verifier_passed": false,
+      "reward": 0.52,
+      "correct": true,
+      "expected_failed": [
+        "cell_B2",
+        "cell_B3",
+        "row_North",
+        "row_South"
+      ],
+      "expected_hit": [
+        "cell_B2",
+        "cell_B3",
+        "row_North",
+        "row_South"
+      ],
+      "actual_failed": [
+        "cell_B2",
+        "cell_B3",
+        "row_North",
+        "row_South"
+      ]
+    },
+    {
+      "sample_id": "email_to_sheet-000:process_violation",
+      "negative_type": "process_violation",
+      "is_redline": true,
+      "should_pass": false,
+      "verifier_passed": false,
+      "reward": 0.84,
+      "correct": true,
+      "expected_failed": [
+        "no_delete",
+        "read_before_write"
+      ],
+      "expected_hit": [
+        "no_delete",
+        "read_before_write"
+      ],
+      "actual_failed": [
+        "no_delete",
+        "read_before_write"
+      ]
+    },
+    {
+      "sample_id": "email_to_sheet-001:correct",
+      "negative_type": "none",
+      "is_redline": false,
+      "should_pass": true,
+      "verifier_passed": true,
+      "reward": 1.0,
+      "correct": true,
+      "expected_failed": [],
+      "expected_hit": [],
+      "actual_failed": []
+    },
+    {
+      "sample_id": "email_to_sheet-001:missing_fill",
+      "negative_type": "missing_fill",
+      "is_redline": true,
+      "should_pass": false,
+      "verifier_passed": false,
+      "reward": 0.76,
+      "correct": true,
+      "expected_failed": [
+        "cell_B4",
+        "row_Central"
+      ],
+      "expected_hit": [
+        "cell_B4",
+        "row_Central"
+      ],
+      "actual_failed": [
+        "cell_B4",
+        "row_Central"
+      ]
+    },
+    {
+      "sample_id": "email_to_sheet-001:wrong_column",
+      "negative_type": "wrong_column",
+      "is_redline": true,
+      "should_pass": false,
+      "verifier_passed": false,
+      "reward": 0.52,
+      "correct": true,
+      "expected_failed": [
+        "cell_B2",
+        "cell_B3",
+        "row_East",
+        "row_West"
+      ],
+      "expected_hit": [
+        "cell_B2",
+        "cell_B3",
+        "row_East",
+        "row_West"
+      ],
+      "actual_failed": [
+        "cell_B2",
+        "cell_B3",
+        "row_East",
+        "row_West"
+      ]
+    },
+    {
+      "sample_id": "email_to_sheet-001:process_violation",
+      "negative_type": "process_violation",
+      "is_redline": true,
+      "should_pass": false,
+      "verifier_passed": false,
+      "reward": 0.84,
+      "correct": true,
+      "expected_failed": [
+        "no_delete",
+        "read_before_write"
+      ],
+      "expected_hit": [
+        "no_delete",
+        "read_before_write"
+      ],
+      "actual_failed": [
+        "no_delete",
+        "read_before_write"
+      ]
+    },
+    {
+      "sample_id": "email_to_sheet-002:correct",
+      "negative_type": "none",
+      "is_redline": false,
+      "should_pass": true,
+      "verifier_passed": true,
+      "reward": 1.0,
+      "correct": true,
+      "expected_failed": [],
+      "expected_hit": [],
+      "actual_failed": []
+    },
+    {
+      "sample_id": "email_to_sheet-002:missing_fill",
+      "negative_type": "missing_fill",
+      "is_redline": true,
+      "should_pass": false,
+      "verifier_passed": false,
+      "reward": 0.76,
+      "correct": true,
+      "expected_failed": [
+        "cell_B4",
+        "row_Coastal"
+      ],
+      "expected_hit": [
+        "cell_B4",
+        "row_Coastal"
+      ],
+      "actual_failed": [
+        "cell_B4",
+        "row_Coastal"
+      ]
+    },
+    {
+      "sample_id": "email_to_sheet-002:wrong_column",
+      "negative_type": "wrong_column",
+      "is_redline": true,
+      "should_pass": false,
+      "verifier_passed": false,
+      "reward": 0.52,
+      "correct": true,
+      "expected_failed": [
+        "cell_B2",
+        "cell_B3",
+        "row_North",
+        "row_Northeast"
+      ],
+      "expected_hit": [
+        "cell_B2",
+        "cell_B3",
+        "row_North",
+        "row_Northeast"
+      ],
+      "actual_failed": [
+        "cell_B2",
+        "cell_B3",
+        "row_North",
+        "row_Northeast"
+      ]
+    },
+    {
+      "sample_id": "email_to_sheet-002:process_violation",
+      "negative_type": "process_violation",
+      "is_redline": true,
+      "should_pass": false,
+      "verifier_passed": false,
+      "reward": 0.84,
+      "correct": true,
+      "expected_failed": [
+        "no_delete",
+        "read_before_write"
+      ],
+      "expected_hit": [
+        "no_delete",
+        "read_before_write"
+      ],
+      "actual_failed": [
+        "no_delete",
+        "read_before_write"
+      ]
+    },
+    {
+      "sample_id": "email_to_sheet-003:correct",
+      "negative_type": "none",
+      "is_redline": false,
+      "should_pass": true,
+      "verifier_passed": true,
+      "reward": 1.0,
+      "correct": true,
+      "expected_failed": [],
+      "expected_hit": [],
+      "actual_failed": []
+    },
+    {
+      "sample_id": "email_to_sheet-003:missing_fill",
+      "negative_type": "missing_fill",
+      "is_redline": true,
+      "should_pass": false,
+      "verifier_passed": false,
+      "reward": 0.8065,
+      "correct": true,
+      "expected_failed": [
+        "cell_B5",
+        "row_West"
+      ],
+      "expected_hit": [
+        "cell_B5",
+        "row_West"
+      ],
+      "actual_failed": [
+        "cell_B5",
+        "row_West"
+      ]
+    },
+    {
+      "sample_id": "email_to_sheet-003:wrong_column",
+      "negative_type": "wrong_column",
+      "is_redline": true,
+      "should_pass": false,
+      "verifier_passed": false,
+      "reward": 0.8065,
+      "correct": true,
+      "expected_failed": [
+        "cell_B5",
+        "row_West"
+      ],
+      "expected_hit": [
+        "cell_B5",
+        "row_West"
+      ],
+      "actual_failed": [
+        "cell_B5",
+        "row_West"
+      ]
+    },
+    {
+      "sample_id": "email_to_sheet-003:process_violation",
+      "negative_type": "process_violation",
+      "is_redline": true,
+      "should_pass": false,
+      "verifier_passed": false,
+      "reward": 0.871,
+      "correct": true,
+      "expected_failed": [
+        "no_delete",
+        "read_before_write"
+      ],
+      "expected_hit": [
+        "no_delete",
+        "read_before_write"
+      ],
+      "actual_failed": [
+        "no_delete",
+        "read_before_write"
+      ]
+    },
+    {
+      "sample_id": "email_to_sheet-004:correct",
+      "negative_type": "none",
+      "is_redline": false,
+      "should_pass": true,
+      "verifier_passed": true,
+      "reward": 1.0,
+      "correct": true,
+      "expected_failed": [],
+      "expected_hit": [],
+      "actual_failed": []
+    },
+    {
+      "sample_id": "email_to_sheet-004:missing_fill",
+      "negative_type": "missing_fill",
+      "is_redline": true,
+      "should_pass": false,
+      "verifier_passed": false,
+      "reward": 0.76,
+      "correct": true,
+      "expected_failed": [
+        "cell_B4",
+        "row_Central"
+      ],
+      "expected_hit": [
+        "cell_B4",
+        "row_Central"
+      ],
+      "actual_failed": [
+        "cell_B4",
+        "row_Central"
+      ]
+    },
+    {
+      "sample_id": "email_to_sheet-004:wrong_column",
+      "negative_type": "wrong_column",
+      "is_redline": true,
+      "should_pass": false,
+      "verifier_passed": false,
+      "reward": 0.52,
+      "correct": true,
+      "expected_failed": [
+        "cell_B2",
+        "cell_B3",
+        "row_Inland",
+        "row_Overseas"
+      ],
+      "expected_hit": [
+        "cell_B2",
+        "cell_B3",
+        "row_Inland",
+        "row_Overseas"
+      ],
+      "actual_failed": [
+        "cell_B2",
+        "cell_B3",
+        "row_Inland",
+        "row_Overseas"
+      ]
+    },
+    {
+      "sample_id": "email_to_sheet-004:process_violation",
+      "negative_type": "process_violation",
+      "is_redline": true,
+      "should_pass": false,
+      "verifier_passed": false,
+      "reward": 0.84,
+      "correct": true,
+      "expected_failed": [
+        "no_delete",
+        "read_before_write"
+      ],
+      "expected_hit": [
+        "no_delete",
+        "read_before_write"
+      ],
+      "actual_failed": [
+        "no_delete",
+        "read_before_write"
+      ]
+    }
+  ]
+}

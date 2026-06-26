@@ -1,0 +1,20 @@
+{
+  "total": 1000,
+  "wall_clock_s": 0.112,
+  "throughput_per_s": 8900.8,
+  "configured_caps": {
+    "light": 128,
+    "browser_heavy": 8
+  },
+  "peak_concurrency": {
+    "browser_heavy": 8,
+    "light": 128
+  },
+  "pass_rate": 0.7,
+  "passed": 700,
+  "retried": 0,
+  "by_resource_class": {
+    "browser_heavy": 50,
+    "light": 950
+  }
+}

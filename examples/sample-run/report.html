@@ -1,0 +1,1273 @@
+<!doctype html><html lang="zh"><head><meta charset="utf-8">
+<title>Loom — agentic 数据 + 环境生产平台 · 综合 demo</title>
+<style>
+ body{font:14px/1.5 -apple-system,Segoe UI,Roboto,Helvetica,Arial,"PingFang SC",sans-serif;margin:0;background:#0f1115;color:#e6e6e6}
+ .wrap{max-width:1080px;margin:0 auto;padding:24px}
+ h1{font-size:20px;margin:0 0 4px} h2{font-size:15px;margin:26px 0 10px;color:#9ad}
+ .sub{color:#8a93a2;margin-bottom:16px}
+ .chips{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}
+ .chip{background:#1a1f2b;border:1px solid #2a3240;border-radius:8px;padding:6px 10px}
+ .chip b{color:#fff} .ok{color:#43d17a} .bad{color:#ff6b6b} .warn{color:#ffcf5c}
+ table{border-collapse:collapse;width:100%;font-size:13px} th,td{border:1px solid #2a3240;padding:6px 8px;text-align:left}
+ th{background:#161b25;color:#9ad} tr:nth-child(even) td{background:#141821}
+ .badge{padding:1px 7px;border-radius:6px;font-size:12px;font-weight:600}
+ .pass{background:#143524;color:#43d17a} .fail{background:#3a1722;color:#ff6b6b}
+ .bars{display:flex;gap:2px;align-items:flex-end;height:22px}
+ .bar{width:7px;background:#43d17a;border-radius:1px}
+ .cm{display:grid;grid-template-columns:auto auto auto;gap:0;max-width:360px}
+ .cm div{border:1px solid #2a3240;padding:8px 12px} .cm .hdr{background:#161b25;color:#9ad}
+ details{background:#141821;border:1px solid #2a3240;border-radius:6px;margin:4px 0;padding:4px 8px}
+ summary{cursor:pointer} code{color:#ffcf5c} .mut{color:#8a93a2}
+ .hist{display:flex;gap:6px;align-items:flex-end;height:80px}
+ .hist .col{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:11px;color:#8a93a2}
+ .hist .h{width:38px;background:#3a6df0;border-radius:2px 2px 0 0}
+</style></head><body><div class="wrap">
+<h1>Loom — agentic 数据 + 环境生产平台 · 综合 demo</h1>
+<div class="sub">数据是产品 · 环境是验证底座 · Task+Rubric+验证是壁垒</div>
+<div class="chips">
+ <span class="chip">rollouts <b>20</b></span>
+ <span class="chip">pass <b class="ok">5</b> / fail <b class="bad">15</b></span>
+ <span class="chip">pass rate <b>0.25</b></span>
+ <span class="chip">policies <b>mock:correct, mock:missing_fill, mock:process_violation, mock:wrong_column</b></span>
+</div>
+
+
+<h2>① 验证器可靠性（核心壁垒：验证好才有好信号）</h2>
+<div class="chips">
+ <span class="chip">误收率 FA <b class="ok">0.0</b></span>
+ <span class="chip">误拒率 FR <b class="ok">0.0</b></span>
+ <span class="chip">红线泄露 <b class="ok">0</b> ✓</span>
+ <span class="chip">预期失败命中 <b>1.0</b></span>
+ <span class="chip">accuracy <b>1.0</b></span>
+</div>
+<div class="cm">
+ <div class="hdr"></div><div class="hdr">verifier: pass</div><div class="hdr">verifier: fail</div>
+ <div class="hdr">应通过</div><div class="ok">TP 5</div><div class="warn">FN 0</div>
+ <div class="hdr">应拒绝</div><div class="bad">FP 0</div><div class="ok">TN 15</div>
+</div>
+<p class="mut">LLM-judge：judge skipped（无 LLM）</p>
+
+
+
+<h2>② 调度 / 并发（资源感知 + 隔离，1k 模拟）</h2>
+<div class="chips">
+ <span class="chip">tasks <b>1000</b></span>
+ <span class="chip">wall <b>0.112s</b></span>
+ <span class="chip">吞吐 <b>8900.8/s</b></span>
+ <span class="chip">pass rate <b>0.7</b></span>
+ <span class="chip">重试 <b>0</b></span>
+</div>
+<table><tr><th>资源类</th><th>并发上限</th><th>峰值并发</th><th>任务数</th></tr>
+
+ <tr><td>light</td><td>128</td>
+ <td class="ok">128</td>
+ <td>950</td></tr>
+
+ <tr><td>browser_heavy</td><td>8</td>
+ <td class="ok">8</td>
+ <td>50</td></tr>
+</table>
+
+
+
+<h2>③ 数据集交付（筛选 / 去重 / 配平）</h2>
+<div class="chips">
+ <span class="chip">输入 <b>20</b></span>
+ <span class="chip">保留 <b class="ok">5</b></span>
+ <span class="chip">低质丢弃 <b>15</b></span>
+ <span class="chip">去重丢弃 <b>0</b></span>
+ <span class="chip">policy <b>mock-oracle</b></span>
+</div>
+<p class="mut">交付格式：SFT(sft.jsonl) · RL(rl.jsonl) · Task+Rubric bundle/ · manifest.json（provenance 可复现）。难度分布：{'easy': 1, 'medium': 2, 'hard': 2}</p>
+<div class="hist">
+
+ <div class="col"><div class="h" style="height:0px"></div>0<span>[0,0.2)</span></div>
+
+ <div class="col"><div class="h" style="height:0px"></div>0<span>[0.2,0.4)</span></div>
+
+ <div class="col"><div class="h" style="height:23px"></div>4<span>[0.4,0.6)</span></div>
+
+ <div class="col"><div class="h" style="height:23px"></div>4<span>[0.6,0.8)</span></div>
+
+ <div class="col"><div class="h" style="height:70px"></div>12<span>[0.8,1.0]</span></div>
+</div>
+
+
+<h2>④ 逐 rollout（点开看每个 check 的解释 + step reward）</h2>
+<table><tr><th>task</th><th>policy</th><th>判定</th><th>reward</th><th>step rewards</th><th>失败 checks</th></tr>
+
+<tr>
+ <td>email_to_sheet-000<div class="mut">easy</div></td>
+ <td>mock:correct</td>
+ <td><span class="badge pass">PASS</span></td>
+ <td>1.0</td>
+ <td><div class="bars"><div class="bar" style="height:22px;background:#43d17a"></div><div class="bar" style="height:22px;background:#43d17a"></div><div class="bar" style="height:22px;background:#43d17a"></div><div class="bar" style="height:22px;background:#43d17a"></div><div class="bar" style="height:22px;background:#43d17a"></div></div></td>
+ <td></td>
+</tr>
+<tr><td colspan="6"><details><summary class="mut">checks 明细（read_email → write_cell → write_cell → write_cell → mark_email_done）</summary>
+ <table><tr><th>check</th><th>类型</th><th>红线</th><th>score</th><th>判定</th><th>理由</th></tr>
+ <tr>
+  <td><code>cell_B2</code></td><td>state/final</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">sheet!B2=120 (期望 120)</td></tr><tr>
+  <td><code>cell_B3</code></td><td>state/final</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">sheet!B3=95 (期望 95)</td></tr><tr>
+  <td><code>cell_B4</code></td><td>state/final</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">sheet!B4=143 (期望 143)</td></tr><tr>
+  <td><code>row_North</code></td><td>state/final</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">存在行 {'Region': 'North', 'Revenue': 120} -> True（共 3 行）</td></tr><tr>
+  <td><code>row_South</code></td><td>state/final</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">存在行 {'Region': 'South', 'Revenue': 95} -> True（共 3 行）</td></tr><tr>
+  <td><code>row_West</code></td><td>state/final</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">存在行 {'Region': 'West', 'Revenue': 143} -> True（共 3 行）</td></tr><tr>
+  <td><code>email_done</code></td><td>state/final</td>
+  <td></td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">email.status='done' (期望 'done')</td></tr><tr>
+  <td><code>read_before_write</code></td><td>process/step</td>
+  <td></td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">每次 write_cell 前需先 read_email；3 次调用，通过 3/3</td></tr><tr>
+  <td><code>no_delete</code></td><td>process/trajectory</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">禁用动作 ['delete_row'] 未出现 -> True</td></tr><tr>
+  <td><code>step_budget</code></td><td>process/trajectory</td>
+  <td></td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">步数 5 <= 15 -> True</td></tr><tr>
+  <td><code>faithful</code></td><td>judge/trajectory</td>
+  <td></td><td>0.0</td>
+  <td><span class="mut">skip</span></td>
+  <td class="mut">judge skipped（未配置 LLM_API_KEY）</td></tr>
+ </table></details></td></tr>
+
+<tr>
+ <td>email_to_sheet-000<div class="mut">easy</div></td>
+ <td>mock:missing_fill</td>
+ <td><span class="badge fail">FAIL</span></td>
+ <td>0.76</td>
+ <td><div class="bars"><div class="bar" style="height:22px;background:#43d17a"></div><div class="bar" style="height:22px;background:#43d17a"></div><div class="bar" style="height:22px;background:#43d17a"></div><div class="bar" style="height:22px;background:#43d17a"></div></div></td>
+ <td><code>cell_B4</code><span class="bad">*</span> <code>row_West</code><span class="bad">*</span> </td>
+</tr>
+<tr><td colspan="6"><details><summary class="mut">checks 明细（read_email → write_cell → write_cell → mark_email_done）</summary>
+ <table><tr><th>check</th><th>类型</th><th>红线</th><th>score</th><th>判定</th><th>理由</th></tr>
+ <tr>
+  <td><code>cell_B2</code></td><td>state/final</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">sheet!B2=120 (期望 120)</td></tr><tr>
+  <td><code>cell_B3</code></td><td>state/final</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">sheet!B3=95 (期望 95)</td></tr><tr>
+  <td><code>cell_B4</code></td><td>state/final</td>
+  <td>是</td><td>0.0</td>
+  <td><span class="bad">✗</span></td>
+  <td class="mut">sheet!B4=None (期望 143)</td></tr><tr>
+  <td><code>row_North</code></td><td>state/final</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">存在行 {'Region': 'North', 'Revenue': 120} -> True（共 3 行）</td></tr><tr>
+  <td><code>row_South</code></td><td>state/final</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">存在行 {'Region': 'South', 'Revenue': 95} -> True（共 3 行）</td></tr><tr>
+  <td><code>row_West</code></td><td>state/final</td>
+  <td>是</td><td>0.0</td>
+  <td><span class="bad">✗</span></td>
+  <td class="mut">存在行 {'Region': 'West', 'Revenue': 143} -> False（共 3 行）</td></tr><tr>
+  <td><code>email_done</code></td><td>state/final</td>
+  <td></td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">email.status='done' (期望 'done')</td></tr><tr>
+  <td><code>read_before_write</code></td><td>process/step</td>
+  <td></td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">每次 write_cell 前需先 read_email；2 次调用，通过 2/2</td></tr><tr>
+  <td><code>no_delete</code></td><td>process/trajectory</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">禁用动作 ['delete_row'] 未出现 -> True</td></tr><tr>
+  <td><code>step_budget</code></td><td>process/trajectory</td>
+  <td></td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">步数 4 <= 15 -> True</td></tr><tr>
+  <td><code>faithful</code></td><td>judge/trajectory</td>
+  <td></td><td>0.0</td>
+  <td><span class="mut">skip</span></td>
+  <td class="mut">judge skipped（未配置 LLM_API_KEY）</td></tr>
+ </table></details></td></tr>
+
+<tr>
+ <td>email_to_sheet-000<div class="mut">easy</div></td>
+ <td>mock:wrong_column</td>
+ <td><span class="badge fail">FAIL</span></td>
+ <td>0.52</td>
+ <td><div class="bars"><div class="bar" style="height:22px;background:#43d17a"></div><div class="bar" style="height:22px;background:#43d17a"></div><div class="bar" style="height:22px;background:#43d17a"></div><div class="bar" style="height:22px;background:#43d17a"></div><div class="bar" style="height:22px;background:#43d17a"></div></div></td>
+ <td><code>cell_B2</code><span class="bad">*</span> <code>cell_B3</code><span class="bad">*</span> <code>row_North</code><span class="bad">*</span> <code>row_South</code><span class="bad">*</span> </td>
+</tr>
+<tr><td colspan="6"><details><summary class="mut">checks 明细（read_email → write_cell → write_cell → write_cell → mark_email_done）</summary>
+ <table><tr><th>check</th><th>类型</th><th>红线</th><th>score</th><th>判定</th><th>理由</th></tr>
+ <tr>
+  <td><code>cell_B2</code></td><td>state/final</td>
+  <td>是</td><td>0.0</td>
+  <td><span class="bad">✗</span></td>
+  <td class="mut">sheet!B2=95 (期望 120)</td></tr><tr>
+  <td><code>cell_B3</code></td><td>state/final</td>
+  <td>是</td><td>0.0</td>
+  <td><span class="bad">✗</span></td>
+  <td class="mut">sheet!B3=120 (期望 95)</td></tr><tr>
+  <td><code>cell_B4</code></td><td>state/final</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">sheet!B4=143 (期望 143)</td></tr><tr>
+  <td><code>row_North</code></td><td>state/final</td>
+  <td>是</td><td>0.0</td>
+  <td><span class="bad">✗</span></td>
+  <td class="mut">存在行 {'Region': 'North', 'Revenue': 120} -> False（共 3 行）</td></tr><tr>
+  <td><code>row_South</code></td><td>state/final</td>
+  <td>是</td><td>0.0</td>
+  <td><span class="bad">✗</span></td>
+  <td class="mut">存在行 {'Region': 'South', 'Revenue': 95} -> False（共 3 行）</td></tr><tr>
+  <td><code>row_West</code></td><td>state/final</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">存在行 {'Region': 'West', 'Revenue': 143} -> True（共 3 行）</td></tr><tr>
+  <td><code>email_done</code></td><td>state/final</td>
+  <td></td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">email.status='done' (期望 'done')</td></tr><tr>
+  <td><code>read_before_write</code></td><td>process/step</td>
+  <td></td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">每次 write_cell 前需先 read_email；3 次调用，通过 3/3</td></tr><tr>
+  <td><code>no_delete</code></td><td>process/trajectory</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">禁用动作 ['delete_row'] 未出现 -> True</td></tr><tr>
+  <td><code>step_budget</code></td><td>process/trajectory</td>
+  <td></td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">步数 5 <= 15 -> True</td></tr><tr>
+  <td><code>faithful</code></td><td>judge/trajectory</td>
+  <td></td><td>0.0</td>
+  <td><span class="mut">skip</span></td>
+  <td class="mut">judge skipped（未配置 LLM_API_KEY）</td></tr>
+ </table></details></td></tr>
+
+<tr>
+ <td>email_to_sheet-000<div class="mut">easy</div></td>
+ <td>mock:process_violation</td>
+ <td><span class="badge fail">FAIL</span></td>
+ <td>0.84</td>
+ <td><div class="bars"><div class="bar" style="height:2px;background:#ff6b6b"></div><div class="bar" style="height:2px;background:#ff6b6b"></div><div class="bar" style="height:2px;background:#ff6b6b"></div><div class="bar" style="height:22px;background:#43d17a"></div><div class="bar" style="height:22px;background:#43d17a"></div></div></td>
+ <td><code>read_before_write</code> <code>no_delete</code><span class="bad">*</span> </td>
+</tr>
+<tr><td colspan="6"><details><summary class="mut">checks 明细（write_cell → write_cell → write_cell → delete_row → mark_email_done）</summary>
+ <table><tr><th>check</th><th>类型</th><th>红线</th><th>score</th><th>判定</th><th>理由</th></tr>
+ <tr>
+  <td><code>cell_B2</code></td><td>state/final</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">sheet!B2=120 (期望 120)</td></tr><tr>
+  <td><code>cell_B3</code></td><td>state/final</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">sheet!B3=95 (期望 95)</td></tr><tr>
+  <td><code>cell_B4</code></td><td>state/final</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">sheet!B4=143 (期望 143)</td></tr><tr>
+  <td><code>row_North</code></td><td>state/final</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">存在行 {'Region': 'North', 'Revenue': 120} -> True（共 3 行）</td></tr><tr>
+  <td><code>row_South</code></td><td>state/final</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">存在行 {'Region': 'South', 'Revenue': 95} -> True（共 3 行）</td></tr><tr>
+  <td><code>row_West</code></td><td>state/final</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">存在行 {'Region': 'West', 'Revenue': 143} -> True（共 3 行）</td></tr><tr>
+  <td><code>email_done</code></td><td>state/final</td>
+  <td></td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">email.status='done' (期望 'done')</td></tr><tr>
+  <td><code>read_before_write</code></td><td>process/step</td>
+  <td></td><td>0.0</td>
+  <td><span class="bad">✗</span></td>
+  <td class="mut">每次 write_cell 前需先 read_email；3 次调用，通过 0/3</td></tr><tr>
+  <td><code>no_delete</code></td><td>process/trajectory</td>
+  <td>是</td><td>0.0</td>
+  <td><span class="bad">✗</span></td>
+  <td class="mut">禁用动作 ['delete_row'] 未出现 -> False；命中 ['delete_row']</td></tr><tr>
+  <td><code>step_budget</code></td><td>process/trajectory</td>
+  <td></td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">步数 5 <= 15 -> True</td></tr><tr>
+  <td><code>faithful</code></td><td>judge/trajectory</td>
+  <td></td><td>0.0</td>
+  <td><span class="mut">skip</span></td>
+  <td class="mut">judge skipped（未配置 LLM_API_KEY）</td></tr>
+ </table></details></td></tr>
+
+<tr>
+ <td>email_to_sheet-001<div class="mut">medium</div></td>
+ <td>mock:correct</td>
+ <td><span class="badge pass">PASS</span></td>
+ <td>1.0</td>
+ <td><div class="bars"><div class="bar" style="height:22px;background:#43d17a"></div><div class="bar" style="height:22px;background:#43d17a"></div><div class="bar" style="height:22px;background:#43d17a"></div><div class="bar" style="height:22px;background:#43d17a"></div><div class="bar" style="height:22px;background:#43d17a"></div></div></td>
+ <td></td>
+</tr>
+<tr><td colspan="6"><details><summary class="mut">checks 明细（read_email → write_cell → write_cell → write_cell → mark_email_done）</summary>
+ <table><tr><th>check</th><th>类型</th><th>红线</th><th>score</th><th>判定</th><th>理由</th></tr>
+ <tr>
+  <td><code>cell_B2</code></td><td>state/final</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">sheet!B2=88 (期望 88)</td></tr><tr>
+  <td><code>cell_B3</code></td><td>state/final</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">sheet!B3=156 (期望 156)</td></tr><tr>
+  <td><code>cell_B4</code></td><td>state/final</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">sheet!B4=102 (期望 102)</td></tr><tr>
+  <td><code>row_East</code></td><td>state/final</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">存在行 {'Region': 'East', 'Revenue': 88} -> True（共 3 行）</td></tr><tr>
+  <td><code>row_West</code></td><td>state/final</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">存在行 {'Region': 'West', 'Revenue': 156} -> True（共 3 行）</td></tr><tr>
+  <td><code>row_Central</code></td><td>state/final</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">存在行 {'Region': 'Central', 'Revenue': 102} -> True（共 3 行）</td></tr><tr>
+  <td><code>email_done</code></td><td>state/final</td>
+  <td></td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">email.status='done' (期望 'done')</td></tr><tr>
+  <td><code>read_before_write</code></td><td>process/step</td>
+  <td></td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">每次 write_cell 前需先 read_email；3 次调用，通过 3/3</td></tr><tr>
+  <td><code>no_delete</code></td><td>process/trajectory</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">禁用动作 ['delete_row'] 未出现 -> True</td></tr><tr>
+  <td><code>step_budget</code></td><td>process/trajectory</td>
+  <td></td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">步数 5 <= 15 -> True</td></tr><tr>
+  <td><code>faithful</code></td><td>judge/trajectory</td>
+  <td></td><td>0.0</td>
+  <td><span class="mut">skip</span></td>
+  <td class="mut">judge skipped（未配置 LLM_API_KEY）</td></tr>
+ </table></details></td></tr>
+
+<tr>
+ <td>email_to_sheet-001<div class="mut">medium</div></td>
+ <td>mock:missing_fill</td>
+ <td><span class="badge fail">FAIL</span></td>
+ <td>0.76</td>
+ <td><div class="bars"><div class="bar" style="height:22px;background:#43d17a"></div><div class="bar" style="height:22px;background:#43d17a"></div><div class="bar" style="height:22px;background:#43d17a"></div><div class="bar" style="height:22px;background:#43d17a"></div></div></td>
+ <td><code>cell_B4</code><span class="bad">*</span> <code>row_Central</code><span class="bad">*</span> </td>
+</tr>
+<tr><td colspan="6"><details><summary class="mut">checks 明细（read_email → write_cell → write_cell → mark_email_done）</summary>
+ <table><tr><th>check</th><th>类型</th><th>红线</th><th>score</th><th>判定</th><th>理由</th></tr>
+ <tr>
+  <td><code>cell_B2</code></td><td>state/final</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">sheet!B2=88 (期望 88)</td></tr><tr>
+  <td><code>cell_B3</code></td><td>state/final</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">sheet!B3=156 (期望 156)</td></tr><tr>
+  <td><code>cell_B4</code></td><td>state/final</td>
+  <td>是</td><td>0.0</td>
+  <td><span class="bad">✗</span></td>
+  <td class="mut">sheet!B4=None (期望 102)</td></tr><tr>
+  <td><code>row_East</code></td><td>state/final</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">存在行 {'Region': 'East', 'Revenue': 88} -> True（共 3 行）</td></tr><tr>
+  <td><code>row_West</code></td><td>state/final</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">存在行 {'Region': 'West', 'Revenue': 156} -> True（共 3 行）</td></tr><tr>
+  <td><code>row_Central</code></td><td>state/final</td>
+  <td>是</td><td>0.0</td>
+  <td><span class="bad">✗</span></td>
+  <td class="mut">存在行 {'Region': 'Central', 'Revenue': 102} -> False（共 3 行）</td></tr><tr>
+  <td><code>email_done</code></td><td>state/final</td>
+  <td></td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">email.status='done' (期望 'done')</td></tr><tr>
+  <td><code>read_before_write</code></td><td>process/step</td>
+  <td></td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">每次 write_cell 前需先 read_email；2 次调用，通过 2/2</td></tr><tr>
+  <td><code>no_delete</code></td><td>process/trajectory</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">禁用动作 ['delete_row'] 未出现 -> True</td></tr><tr>
+  <td><code>step_budget</code></td><td>process/trajectory</td>
+  <td></td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">步数 4 <= 15 -> True</td></tr><tr>
+  <td><code>faithful</code></td><td>judge/trajectory</td>
+  <td></td><td>0.0</td>
+  <td><span class="mut">skip</span></td>
+  <td class="mut">judge skipped（未配置 LLM_API_KEY）</td></tr>
+ </table></details></td></tr>
+
+<tr>
+ <td>email_to_sheet-001<div class="mut">medium</div></td>
+ <td>mock:wrong_column</td>
+ <td><span class="badge fail">FAIL</span></td>
+ <td>0.52</td>
+ <td><div class="bars"><div class="bar" style="height:22px;background:#43d17a"></div><div class="bar" style="height:22px;background:#43d17a"></div><div class="bar" style="height:22px;background:#43d17a"></div><div class="bar" style="height:22px;background:#43d17a"></div><div class="bar" style="height:22px;background:#43d17a"></div></div></td>
+ <td><code>cell_B2</code><span class="bad">*</span> <code>cell_B3</code><span class="bad">*</span> <code>row_East</code><span class="bad">*</span> <code>row_West</code><span class="bad">*</span> </td>
+</tr>
+<tr><td colspan="6"><details><summary class="mut">checks 明细（read_email → write_cell → write_cell → write_cell → mark_email_done）</summary>
+ <table><tr><th>check</th><th>类型</th><th>红线</th><th>score</th><th>判定</th><th>理由</th></tr>
+ <tr>
+  <td><code>cell_B2</code></td><td>state/final</td>
+  <td>是</td><td>0.0</td>
+  <td><span class="bad">✗</span></td>
+  <td class="mut">sheet!B2=156 (期望 88)</td></tr><tr>
+  <td><code>cell_B3</code></td><td>state/final</td>
+  <td>是</td><td>0.0</td>
+  <td><span class="bad">✗</span></td>
+  <td class="mut">sheet!B3=88 (期望 156)</td></tr><tr>
+  <td><code>cell_B4</code></td><td>state/final</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">sheet!B4=102 (期望 102)</td></tr><tr>
+  <td><code>row_East</code></td><td>state/final</td>
+  <td>是</td><td>0.0</td>
+  <td><span class="bad">✗</span></td>
+  <td class="mut">存在行 {'Region': 'East', 'Revenue': 88} -> False（共 3 行）</td></tr><tr>
+  <td><code>row_West</code></td><td>state/final</td>
+  <td>是</td><td>0.0</td>
+  <td><span class="bad">✗</span></td>
+  <td class="mut">存在行 {'Region': 'West', 'Revenue': 156} -> False（共 3 行）</td></tr><tr>
+  <td><code>row_Central</code></td><td>state/final</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">存在行 {'Region': 'Central', 'Revenue': 102} -> True（共 3 行）</td></tr><tr>
+  <td><code>email_done</code></td><td>state/final</td>
+  <td></td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">email.status='done' (期望 'done')</td></tr><tr>
+  <td><code>read_before_write</code></td><td>process/step</td>
+  <td></td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">每次 write_cell 前需先 read_email；3 次调用，通过 3/3</td></tr><tr>
+  <td><code>no_delete</code></td><td>process/trajectory</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">禁用动作 ['delete_row'] 未出现 -> True</td></tr><tr>
+  <td><code>step_budget</code></td><td>process/trajectory</td>
+  <td></td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">步数 5 <= 15 -> True</td></tr><tr>
+  <td><code>faithful</code></td><td>judge/trajectory</td>
+  <td></td><td>0.0</td>
+  <td><span class="mut">skip</span></td>
+  <td class="mut">judge skipped（未配置 LLM_API_KEY）</td></tr>
+ </table></details></td></tr>
+
+<tr>
+ <td>email_to_sheet-001<div class="mut">medium</div></td>
+ <td>mock:process_violation</td>
+ <td><span class="badge fail">FAIL</span></td>
+ <td>0.84</td>
+ <td><div class="bars"><div class="bar" style="height:2px;background:#ff6b6b"></div><div class="bar" style="height:2px;background:#ff6b6b"></div><div class="bar" style="height:2px;background:#ff6b6b"></div><div class="bar" style="height:22px;background:#43d17a"></div><div class="bar" style="height:22px;background:#43d17a"></div></div></td>
+ <td><code>read_before_write</code> <code>no_delete</code><span class="bad">*</span> </td>
+</tr>
+<tr><td colspan="6"><details><summary class="mut">checks 明细（write_cell → write_cell → write_cell → delete_row → mark_email_done）</summary>
+ <table><tr><th>check</th><th>类型</th><th>红线</th><th>score</th><th>判定</th><th>理由</th></tr>
+ <tr>
+  <td><code>cell_B2</code></td><td>state/final</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">sheet!B2=88 (期望 88)</td></tr><tr>
+  <td><code>cell_B3</code></td><td>state/final</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">sheet!B3=156 (期望 156)</td></tr><tr>
+  <td><code>cell_B4</code></td><td>state/final</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">sheet!B4=102 (期望 102)</td></tr><tr>
+  <td><code>row_East</code></td><td>state/final</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">存在行 {'Region': 'East', 'Revenue': 88} -> True（共 3 行）</td></tr><tr>
+  <td><code>row_West</code></td><td>state/final</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">存在行 {'Region': 'West', 'Revenue': 156} -> True（共 3 行）</td></tr><tr>
+  <td><code>row_Central</code></td><td>state/final</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">存在行 {'Region': 'Central', 'Revenue': 102} -> True（共 3 行）</td></tr><tr>
+  <td><code>email_done</code></td><td>state/final</td>
+  <td></td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">email.status='done' (期望 'done')</td></tr><tr>
+  <td><code>read_before_write</code></td><td>process/step</td>
+  <td></td><td>0.0</td>
+  <td><span class="bad">✗</span></td>
+  <td class="mut">每次 write_cell 前需先 read_email；3 次调用，通过 0/3</td></tr><tr>
+  <td><code>no_delete</code></td><td>process/trajectory</td>
+  <td>是</td><td>0.0</td>
+  <td><span class="bad">✗</span></td>
+  <td class="mut">禁用动作 ['delete_row'] 未出现 -> False；命中 ['delete_row']</td></tr><tr>
+  <td><code>step_budget</code></td><td>process/trajectory</td>
+  <td></td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">步数 5 <= 15 -> True</td></tr><tr>
+  <td><code>faithful</code></td><td>judge/trajectory</td>
+  <td></td><td>0.0</td>
+  <td><span class="mut">skip</span></td>
+  <td class="mut">judge skipped（未配置 LLM_API_KEY）</td></tr>
+ </table></details></td></tr>
+
+<tr>
+ <td>email_to_sheet-002<div class="mut">medium</div></td>
+ <td>mock:correct</td>
+ <td><span class="badge pass">PASS</span></td>
+ <td>1.0</td>
+ <td><div class="bars"><div class="bar" style="height:22px;background:#43d17a"></div><div class="bar" style="height:22px;background:#43d17a"></div><div class="bar" style="height:22px;background:#43d17a"></div><div class="bar" style="height:22px;background:#43d17a"></div><div class="bar" style="height:22px;background:#43d17a"></div></div></td>
+ <td></td>
+</tr>
+<tr><td colspan="6"><details><summary class="mut">checks 明细（read_email → write_cell → write_cell → write_cell → mark_email_done）</summary>
+ <table><tr><th>check</th><th>类型</th><th>红线</th><th>score</th><th>判定</th><th>理由</th></tr>
+ <tr>
+  <td><code>cell_B2</code></td><td>state/final</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">sheet!B2=200 (期望 200)</td></tr><tr>
+  <td><code>cell_B3</code></td><td>state/final</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">sheet!B3=77 (期望 77)</td></tr><tr>
+  <td><code>cell_B4</code></td><td>state/final</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">sheet!B4=134 (期望 134)</td></tr><tr>
+  <td><code>row_North</code></td><td>state/final</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">存在行 {'Region': 'North', 'Revenue': 200} -> True（共 3 行）</td></tr><tr>
+  <td><code>row_Northeast</code></td><td>state/final</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">存在行 {'Region': 'Northeast', 'Revenue': 77} -> True（共 3 行）</td></tr><tr>
+  <td><code>row_Coastal</code></td><td>state/final</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">存在行 {'Region': 'Coastal', 'Revenue': 134} -> True（共 3 行）</td></tr><tr>
+  <td><code>email_done</code></td><td>state/final</td>
+  <td></td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">email.status='done' (期望 'done')</td></tr><tr>
+  <td><code>read_before_write</code></td><td>process/step</td>
+  <td></td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">每次 write_cell 前需先 read_email；3 次调用，通过 3/3</td></tr><tr>
+  <td><code>no_delete</code></td><td>process/trajectory</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">禁用动作 ['delete_row'] 未出现 -> True</td></tr><tr>
+  <td><code>step_budget</code></td><td>process/trajectory</td>
+  <td></td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">步数 5 <= 15 -> True</td></tr><tr>
+  <td><code>faithful</code></td><td>judge/trajectory</td>
+  <td></td><td>0.0</td>
+  <td><span class="mut">skip</span></td>
+  <td class="mut">judge skipped（未配置 LLM_API_KEY）</td></tr>
+ </table></details></td></tr>
+
+<tr>
+ <td>email_to_sheet-002<div class="mut">medium</div></td>
+ <td>mock:missing_fill</td>
+ <td><span class="badge fail">FAIL</span></td>
+ <td>0.76</td>
+ <td><div class="bars"><div class="bar" style="height:22px;background:#43d17a"></div><div class="bar" style="height:22px;background:#43d17a"></div><div class="bar" style="height:22px;background:#43d17a"></div><div class="bar" style="height:22px;background:#43d17a"></div></div></td>
+ <td><code>cell_B4</code><span class="bad">*</span> <code>row_Coastal</code><span class="bad">*</span> </td>
+</tr>
+<tr><td colspan="6"><details><summary class="mut">checks 明细（read_email → write_cell → write_cell → mark_email_done）</summary>
+ <table><tr><th>check</th><th>类型</th><th>红线</th><th>score</th><th>判定</th><th>理由</th></tr>
+ <tr>
+  <td><code>cell_B2</code></td><td>state/final</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">sheet!B2=200 (期望 200)</td></tr><tr>
+  <td><code>cell_B3</code></td><td>state/final</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">sheet!B3=77 (期望 77)</td></tr><tr>
+  <td><code>cell_B4</code></td><td>state/final</td>
+  <td>是</td><td>0.0</td>
+  <td><span class="bad">✗</span></td>
+  <td class="mut">sheet!B4=None (期望 134)</td></tr><tr>
+  <td><code>row_North</code></td><td>state/final</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">存在行 {'Region': 'North', 'Revenue': 200} -> True（共 3 行）</td></tr><tr>
+  <td><code>row_Northeast</code></td><td>state/final</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">存在行 {'Region': 'Northeast', 'Revenue': 77} -> True（共 3 行）</td></tr><tr>
+  <td><code>row_Coastal</code></td><td>state/final</td>
+  <td>是</td><td>0.0</td>
+  <td><span class="bad">✗</span></td>
+  <td class="mut">存在行 {'Region': 'Coastal', 'Revenue': 134} -> False（共 3 行）</td></tr><tr>
+  <td><code>email_done</code></td><td>state/final</td>
+  <td></td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">email.status='done' (期望 'done')</td></tr><tr>
+  <td><code>read_before_write</code></td><td>process/step</td>
+  <td></td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">每次 write_cell 前需先 read_email；2 次调用，通过 2/2</td></tr><tr>
+  <td><code>no_delete</code></td><td>process/trajectory</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">禁用动作 ['delete_row'] 未出现 -> True</td></tr><tr>
+  <td><code>step_budget</code></td><td>process/trajectory</td>
+  <td></td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">步数 4 <= 15 -> True</td></tr><tr>
+  <td><code>faithful</code></td><td>judge/trajectory</td>
+  <td></td><td>0.0</td>
+  <td><span class="mut">skip</span></td>
+  <td class="mut">judge skipped（未配置 LLM_API_KEY）</td></tr>
+ </table></details></td></tr>
+
+<tr>
+ <td>email_to_sheet-002<div class="mut">medium</div></td>
+ <td>mock:wrong_column</td>
+ <td><span class="badge fail">FAIL</span></td>
+ <td>0.52</td>
+ <td><div class="bars"><div class="bar" style="height:22px;background:#43d17a"></div><div class="bar" style="height:22px;background:#43d17a"></div><div class="bar" style="height:22px;background:#43d17a"></div><div class="bar" style="height:22px;background:#43d17a"></div><div class="bar" style="height:22px;background:#43d17a"></div></div></td>
+ <td><code>cell_B2</code><span class="bad">*</span> <code>cell_B3</code><span class="bad">*</span> <code>row_North</code><span class="bad">*</span> <code>row_Northeast</code><span class="bad">*</span> </td>
+</tr>
+<tr><td colspan="6"><details><summary class="mut">checks 明细（read_email → write_cell → write_cell → write_cell → mark_email_done）</summary>
+ <table><tr><th>check</th><th>类型</th><th>红线</th><th>score</th><th>判定</th><th>理由</th></tr>
+ <tr>
+  <td><code>cell_B2</code></td><td>state/final</td>
+  <td>是</td><td>0.0</td>
+  <td><span class="bad">✗</span></td>
+  <td class="mut">sheet!B2=77 (期望 200)</td></tr><tr>
+  <td><code>cell_B3</code></td><td>state/final</td>
+  <td>是</td><td>0.0</td>
+  <td><span class="bad">✗</span></td>
+  <td class="mut">sheet!B3=200 (期望 77)</td></tr><tr>
+  <td><code>cell_B4</code></td><td>state/final</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">sheet!B4=134 (期望 134)</td></tr><tr>
+  <td><code>row_North</code></td><td>state/final</td>
+  <td>是</td><td>0.0</td>
+  <td><span class="bad">✗</span></td>
+  <td class="mut">存在行 {'Region': 'North', 'Revenue': 200} -> False（共 3 行）</td></tr><tr>
+  <td><code>row_Northeast</code></td><td>state/final</td>
+  <td>是</td><td>0.0</td>
+  <td><span class="bad">✗</span></td>
+  <td class="mut">存在行 {'Region': 'Northeast', 'Revenue': 77} -> False（共 3 行）</td></tr><tr>
+  <td><code>row_Coastal</code></td><td>state/final</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">存在行 {'Region': 'Coastal', 'Revenue': 134} -> True（共 3 行）</td></tr><tr>
+  <td><code>email_done</code></td><td>state/final</td>
+  <td></td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">email.status='done' (期望 'done')</td></tr><tr>
+  <td><code>read_before_write</code></td><td>process/step</td>
+  <td></td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">每次 write_cell 前需先 read_email；3 次调用，通过 3/3</td></tr><tr>
+  <td><code>no_delete</code></td><td>process/trajectory</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">禁用动作 ['delete_row'] 未出现 -> True</td></tr><tr>
+  <td><code>step_budget</code></td><td>process/trajectory</td>
+  <td></td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">步数 5 <= 15 -> True</td></tr><tr>
+  <td><code>faithful</code></td><td>judge/trajectory</td>
+  <td></td><td>0.0</td>
+  <td><span class="mut">skip</span></td>
+  <td class="mut">judge skipped（未配置 LLM_API_KEY）</td></tr>
+ </table></details></td></tr>
+
+<tr>
+ <td>email_to_sheet-002<div class="mut">medium</div></td>
+ <td>mock:process_violation</td>
+ <td><span class="badge fail">FAIL</span></td>
+ <td>0.84</td>
+ <td><div class="bars"><div class="bar" style="height:2px;background:#ff6b6b"></div><div class="bar" style="height:2px;background:#ff6b6b"></div><div class="bar" style="height:2px;background:#ff6b6b"></div><div class="bar" style="height:22px;background:#43d17a"></div><div class="bar" style="height:22px;background:#43d17a"></div></div></td>
+ <td><code>read_before_write</code> <code>no_delete</code><span class="bad">*</span> </td>
+</tr>
+<tr><td colspan="6"><details><summary class="mut">checks 明细（write_cell → write_cell → write_cell → delete_row → mark_email_done）</summary>
+ <table><tr><th>check</th><th>类型</th><th>红线</th><th>score</th><th>判定</th><th>理由</th></tr>
+ <tr>
+  <td><code>cell_B2</code></td><td>state/final</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">sheet!B2=200 (期望 200)</td></tr><tr>
+  <td><code>cell_B3</code></td><td>state/final</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">sheet!B3=77 (期望 77)</td></tr><tr>
+  <td><code>cell_B4</code></td><td>state/final</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">sheet!B4=134 (期望 134)</td></tr><tr>
+  <td><code>row_North</code></td><td>state/final</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">存在行 {'Region': 'North', 'Revenue': 200} -> True（共 3 行）</td></tr><tr>
+  <td><code>row_Northeast</code></td><td>state/final</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">存在行 {'Region': 'Northeast', 'Revenue': 77} -> True（共 3 行）</td></tr><tr>
+  <td><code>row_Coastal</code></td><td>state/final</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">存在行 {'Region': 'Coastal', 'Revenue': 134} -> True（共 3 行）</td></tr><tr>
+  <td><code>email_done</code></td><td>state/final</td>
+  <td></td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">email.status='done' (期望 'done')</td></tr><tr>
+  <td><code>read_before_write</code></td><td>process/step</td>
+  <td></td><td>0.0</td>
+  <td><span class="bad">✗</span></td>
+  <td class="mut">每次 write_cell 前需先 read_email；3 次调用，通过 0/3</td></tr><tr>
+  <td><code>no_delete</code></td><td>process/trajectory</td>
+  <td>是</td><td>0.0</td>
+  <td><span class="bad">✗</span></td>
+  <td class="mut">禁用动作 ['delete_row'] 未出现 -> False；命中 ['delete_row']</td></tr><tr>
+  <td><code>step_budget</code></td><td>process/trajectory</td>
+  <td></td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">步数 5 <= 15 -> True</td></tr><tr>
+  <td><code>faithful</code></td><td>judge/trajectory</td>
+  <td></td><td>0.0</td>
+  <td><span class="mut">skip</span></td>
+  <td class="mut">judge skipped（未配置 LLM_API_KEY）</td></tr>
+ </table></details></td></tr>
+
+<tr>
+ <td>email_to_sheet-003<div class="mut">hard</div></td>
+ <td>mock:correct</td>
+ <td><span class="badge pass">PASS</span></td>
+ <td>1.0</td>
+ <td><div class="bars"><div class="bar" style="height:22px;background:#43d17a"></div><div class="bar" style="height:22px;background:#43d17a"></div><div class="bar" style="height:22px;background:#43d17a"></div><div class="bar" style="height:22px;background:#43d17a"></div><div class="bar" style="height:22px;background:#43d17a"></div><div class="bar" style="height:22px;background:#43d17a"></div></div></td>
+ <td></td>
+</tr>
+<tr><td colspan="6"><details><summary class="mut">checks 明细（read_email → write_cell → write_cell → write_cell → write_cell → mark_email_done）</summary>
+ <table><tr><th>check</th><th>类型</th><th>红线</th><th>score</th><th>判定</th><th>理由</th></tr>
+ <tr>
+  <td><code>cell_B2</code></td><td>state/final</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">sheet!B2=61 (期望 61)</td></tr><tr>
+  <td><code>cell_B3</code></td><td>state/final</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">sheet!B3=61 (期望 61)</td></tr><tr>
+  <td><code>cell_B4</code></td><td>state/final</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">sheet!B4=61 (期望 61)</td></tr><tr>
+  <td><code>cell_B5</code></td><td>state/final</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">sheet!B5=61 (期望 61)</td></tr><tr>
+  <td><code>row_North</code></td><td>state/final</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">存在行 {'Region': 'North', 'Revenue': 61} -> True（共 4 行）</td></tr><tr>
+  <td><code>row_South</code></td><td>state/final</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">存在行 {'Region': 'South', 'Revenue': 61} -> True（共 4 行）</td></tr><tr>
+  <td><code>row_East</code></td><td>state/final</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">存在行 {'Region': 'East', 'Revenue': 61} -> True（共 4 行）</td></tr><tr>
+  <td><code>row_West</code></td><td>state/final</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">存在行 {'Region': 'West', 'Revenue': 61} -> True（共 4 行）</td></tr><tr>
+  <td><code>email_done</code></td><td>state/final</td>
+  <td></td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">email.status='done' (期望 'done')</td></tr><tr>
+  <td><code>read_before_write</code></td><td>process/step</td>
+  <td></td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">每次 write_cell 前需先 read_email；4 次调用，通过 4/4</td></tr><tr>
+  <td><code>no_delete</code></td><td>process/trajectory</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">禁用动作 ['delete_row'] 未出现 -> True</td></tr><tr>
+  <td><code>step_budget</code></td><td>process/trajectory</td>
+  <td></td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">步数 6 <= 15 -> True</td></tr><tr>
+  <td><code>faithful</code></td><td>judge/trajectory</td>
+  <td></td><td>0.0</td>
+  <td><span class="mut">skip</span></td>
+  <td class="mut">judge skipped（未配置 LLM_API_KEY）</td></tr>
+ </table></details></td></tr>
+
+<tr>
+ <td>email_to_sheet-003<div class="mut">hard</div></td>
+ <td>mock:missing_fill</td>
+ <td><span class="badge fail">FAIL</span></td>
+ <td>0.8065</td>
+ <td><div class="bars"><div class="bar" style="height:22px;background:#43d17a"></div><div class="bar" style="height:22px;background:#43d17a"></div><div class="bar" style="height:22px;background:#43d17a"></div><div class="bar" style="height:22px;background:#43d17a"></div><div class="bar" style="height:22px;background:#43d17a"></div></div></td>
+ <td><code>cell_B5</code><span class="bad">*</span> <code>row_West</code><span class="bad">*</span> </td>
+</tr>
+<tr><td colspan="6"><details><summary class="mut">checks 明细（read_email → write_cell → write_cell → write_cell → mark_email_done）</summary>
+ <table><tr><th>check</th><th>类型</th><th>红线</th><th>score</th><th>判定</th><th>理由</th></tr>
+ <tr>
+  <td><code>cell_B2</code></td><td>state/final</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">sheet!B2=61 (期望 61)</td></tr><tr>
+  <td><code>cell_B3</code></td><td>state/final</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">sheet!B3=61 (期望 61)</td></tr><tr>
+  <td><code>cell_B4</code></td><td>state/final</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">sheet!B4=61 (期望 61)</td></tr><tr>
+  <td><code>cell_B5</code></td><td>state/final</td>
+  <td>是</td><td>0.0</td>
+  <td><span class="bad">✗</span></td>
+  <td class="mut">sheet!B5=None (期望 61)</td></tr><tr>
+  <td><code>row_North</code></td><td>state/final</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">存在行 {'Region': 'North', 'Revenue': 61} -> True（共 4 行）</td></tr><tr>
+  <td><code>row_South</code></td><td>state/final</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">存在行 {'Region': 'South', 'Revenue': 61} -> True（共 4 行）</td></tr><tr>
+  <td><code>row_East</code></td><td>state/final</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">存在行 {'Region': 'East', 'Revenue': 61} -> True（共 4 行）</td></tr><tr>
+  <td><code>row_West</code></td><td>state/final</td>
+  <td>是</td><td>0.0</td>
+  <td><span class="bad">✗</span></td>
+  <td class="mut">存在行 {'Region': 'West', 'Revenue': 61} -> False（共 4 行）</td></tr><tr>
+  <td><code>email_done</code></td><td>state/final</td>
+  <td></td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">email.status='done' (期望 'done')</td></tr><tr>
+  <td><code>read_before_write</code></td><td>process/step</td>
+  <td></td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">每次 write_cell 前需先 read_email；3 次调用，通过 3/3</td></tr><tr>
+  <td><code>no_delete</code></td><td>process/trajectory</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">禁用动作 ['delete_row'] 未出现 -> True</td></tr><tr>
+  <td><code>step_budget</code></td><td>process/trajectory</td>
+  <td></td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">步数 5 <= 15 -> True</td></tr><tr>
+  <td><code>faithful</code></td><td>judge/trajectory</td>
+  <td></td><td>0.0</td>
+  <td><span class="mut">skip</span></td>
+  <td class="mut">judge skipped（未配置 LLM_API_KEY）</td></tr>
+ </table></details></td></tr>
+
+<tr>
+ <td>email_to_sheet-003<div class="mut">hard</div></td>
+ <td>mock:wrong_column</td>
+ <td><span class="badge fail">FAIL</span></td>
+ <td>0.8065</td>
+ <td><div class="bars"><div class="bar" style="height:22px;background:#43d17a"></div><div class="bar" style="height:22px;background:#43d17a"></div><div class="bar" style="height:22px;background:#43d17a"></div><div class="bar" style="height:22px;background:#43d17a"></div><div class="bar" style="height:22px;background:#43d17a"></div><div class="bar" style="height:22px;background:#43d17a"></div></div></td>
+ <td><code>cell_B5</code><span class="bad">*</span> <code>row_West</code><span class="bad">*</span> </td>
+</tr>
+<tr><td colspan="6"><details><summary class="mut">checks 明细（read_email → write_cell → write_cell → write_cell → write_cell → mark_email_done）</summary>
+ <table><tr><th>check</th><th>类型</th><th>红线</th><th>score</th><th>判定</th><th>理由</th></tr>
+ <tr>
+  <td><code>cell_B2</code></td><td>state/final</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">sheet!B2=61 (期望 61)</td></tr><tr>
+  <td><code>cell_B3</code></td><td>state/final</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">sheet!B3=61 (期望 61)</td></tr><tr>
+  <td><code>cell_B4</code></td><td>state/final</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">sheet!B4=61 (期望 61)</td></tr><tr>
+  <td><code>cell_B5</code></td><td>state/final</td>
+  <td>是</td><td>0.0</td>
+  <td><span class="bad">✗</span></td>
+  <td class="mut">sheet!B5=62 (期望 61)</td></tr><tr>
+  <td><code>row_North</code></td><td>state/final</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">存在行 {'Region': 'North', 'Revenue': 61} -> True（共 4 行）</td></tr><tr>
+  <td><code>row_South</code></td><td>state/final</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">存在行 {'Region': 'South', 'Revenue': 61} -> True（共 4 行）</td></tr><tr>
+  <td><code>row_East</code></td><td>state/final</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">存在行 {'Region': 'East', 'Revenue': 61} -> True（共 4 行）</td></tr><tr>
+  <td><code>row_West</code></td><td>state/final</td>
+  <td>是</td><td>0.0</td>
+  <td><span class="bad">✗</span></td>
+  <td class="mut">存在行 {'Region': 'West', 'Revenue': 61} -> False（共 4 行）</td></tr><tr>
+  <td><code>email_done</code></td><td>state/final</td>
+  <td></td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">email.status='done' (期望 'done')</td></tr><tr>
+  <td><code>read_before_write</code></td><td>process/step</td>
+  <td></td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">每次 write_cell 前需先 read_email；4 次调用，通过 4/4</td></tr><tr>
+  <td><code>no_delete</code></td><td>process/trajectory</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">禁用动作 ['delete_row'] 未出现 -> True</td></tr><tr>
+  <td><code>step_budget</code></td><td>process/trajectory</td>
+  <td></td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">步数 6 <= 15 -> True</td></tr><tr>
+  <td><code>faithful</code></td><td>judge/trajectory</td>
+  <td></td><td>0.0</td>
+  <td><span class="mut">skip</span></td>
+  <td class="mut">judge skipped（未配置 LLM_API_KEY）</td></tr>
+ </table></details></td></tr>
+
+<tr>
+ <td>email_to_sheet-003<div class="mut">hard</div></td>
+ <td>mock:process_violation</td>
+ <td><span class="badge fail">FAIL</span></td>
+ <td>0.871</td>
+ <td><div class="bars"><div class="bar" style="height:2px;background:#ff6b6b"></div><div class="bar" style="height:2px;background:#ff6b6b"></div><div class="bar" style="height:2px;background:#ff6b6b"></div><div class="bar" style="height:2px;background:#ff6b6b"></div><div class="bar" style="height:22px;background:#43d17a"></div><div class="bar" style="height:22px;background:#43d17a"></div></div></td>
+ <td><code>read_before_write</code> <code>no_delete</code><span class="bad">*</span> </td>
+</tr>
+<tr><td colspan="6"><details><summary class="mut">checks 明细（write_cell → write_cell → write_cell → write_cell → delete_row → mark_email_done）</summary>
+ <table><tr><th>check</th><th>类型</th><th>红线</th><th>score</th><th>判定</th><th>理由</th></tr>
+ <tr>
+  <td><code>cell_B2</code></td><td>state/final</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">sheet!B2=61 (期望 61)</td></tr><tr>
+  <td><code>cell_B3</code></td><td>state/final</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">sheet!B3=61 (期望 61)</td></tr><tr>
+  <td><code>cell_B4</code></td><td>state/final</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">sheet!B4=61 (期望 61)</td></tr><tr>
+  <td><code>cell_B5</code></td><td>state/final</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">sheet!B5=61 (期望 61)</td></tr><tr>
+  <td><code>row_North</code></td><td>state/final</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">存在行 {'Region': 'North', 'Revenue': 61} -> True（共 4 行）</td></tr><tr>
+  <td><code>row_South</code></td><td>state/final</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">存在行 {'Region': 'South', 'Revenue': 61} -> True（共 4 行）</td></tr><tr>
+  <td><code>row_East</code></td><td>state/final</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">存在行 {'Region': 'East', 'Revenue': 61} -> True（共 4 行）</td></tr><tr>
+  <td><code>row_West</code></td><td>state/final</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">存在行 {'Region': 'West', 'Revenue': 61} -> True（共 4 行）</td></tr><tr>
+  <td><code>email_done</code></td><td>state/final</td>
+  <td></td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">email.status='done' (期望 'done')</td></tr><tr>
+  <td><code>read_before_write</code></td><td>process/step</td>
+  <td></td><td>0.0</td>
+  <td><span class="bad">✗</span></td>
+  <td class="mut">每次 write_cell 前需先 read_email；4 次调用，通过 0/4</td></tr><tr>
+  <td><code>no_delete</code></td><td>process/trajectory</td>
+  <td>是</td><td>0.0</td>
+  <td><span class="bad">✗</span></td>
+  <td class="mut">禁用动作 ['delete_row'] 未出现 -> False；命中 ['delete_row']</td></tr><tr>
+  <td><code>step_budget</code></td><td>process/trajectory</td>
+  <td></td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">步数 6 <= 15 -> True</td></tr><tr>
+  <td><code>faithful</code></td><td>judge/trajectory</td>
+  <td></td><td>0.0</td>
+  <td><span class="mut">skip</span></td>
+  <td class="mut">judge skipped（未配置 LLM_API_KEY）</td></tr>
+ </table></details></td></tr>
+
+<tr>
+ <td>email_to_sheet-004<div class="mut">hard</div></td>
+ <td>mock:correct</td>
+ <td><span class="badge pass">PASS</span></td>
+ <td>1.0</td>
+ <td><div class="bars"><div class="bar" style="height:22px;background:#43d17a"></div><div class="bar" style="height:22px;background:#43d17a"></div><div class="bar" style="height:22px;background:#43d17a"></div><div class="bar" style="height:22px;background:#43d17a"></div><div class="bar" style="height:22px;background:#43d17a"></div></div></td>
+ <td></td>
+</tr>
+<tr><td colspan="6"><details><summary class="mut">checks 明细（read_email → write_cell → write_cell → write_cell → mark_email_done）</summary>
+ <table><tr><th>check</th><th>类型</th><th>红线</th><th>score</th><th>判定</th><th>理由</th></tr>
+ <tr>
+  <td><code>cell_B2</code></td><td>state/final</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">sheet!B2=0 (期望 0)</td></tr><tr>
+  <td><code>cell_B3</code></td><td>state/final</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">sheet!B3=305 (期望 305)</td></tr><tr>
+  <td><code>cell_B4</code></td><td>state/final</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">sheet!B4=19 (期望 19)</td></tr><tr>
+  <td><code>row_Inland</code></td><td>state/final</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">存在行 {'Region': 'Inland', 'Revenue': 0} -> True（共 3 行）</td></tr><tr>
+  <td><code>row_Overseas</code></td><td>state/final</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">存在行 {'Region': 'Overseas', 'Revenue': 305} -> True（共 3 行）</td></tr><tr>
+  <td><code>row_Central</code></td><td>state/final</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">存在行 {'Region': 'Central', 'Revenue': 19} -> True（共 3 行）</td></tr><tr>
+  <td><code>email_done</code></td><td>state/final</td>
+  <td></td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">email.status='done' (期望 'done')</td></tr><tr>
+  <td><code>read_before_write</code></td><td>process/step</td>
+  <td></td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">每次 write_cell 前需先 read_email；3 次调用，通过 3/3</td></tr><tr>
+  <td><code>no_delete</code></td><td>process/trajectory</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">禁用动作 ['delete_row'] 未出现 -> True</td></tr><tr>
+  <td><code>step_budget</code></td><td>process/trajectory</td>
+  <td></td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">步数 5 <= 15 -> True</td></tr><tr>
+  <td><code>faithful</code></td><td>judge/trajectory</td>
+  <td></td><td>0.0</td>
+  <td><span class="mut">skip</span></td>
+  <td class="mut">judge skipped（未配置 LLM_API_KEY）</td></tr>
+ </table></details></td></tr>
+
+<tr>
+ <td>email_to_sheet-004<div class="mut">hard</div></td>
+ <td>mock:missing_fill</td>
+ <td><span class="badge fail">FAIL</span></td>
+ <td>0.76</td>
+ <td><div class="bars"><div class="bar" style="height:22px;background:#43d17a"></div><div class="bar" style="height:22px;background:#43d17a"></div><div class="bar" style="height:22px;background:#43d17a"></div><div class="bar" style="height:22px;background:#43d17a"></div></div></td>
+ <td><code>cell_B4</code><span class="bad">*</span> <code>row_Central</code><span class="bad">*</span> </td>
+</tr>
+<tr><td colspan="6"><details><summary class="mut">checks 明细（read_email → write_cell → write_cell → mark_email_done）</summary>
+ <table><tr><th>check</th><th>类型</th><th>红线</th><th>score</th><th>判定</th><th>理由</th></tr>
+ <tr>
+  <td><code>cell_B2</code></td><td>state/final</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">sheet!B2=0 (期望 0)</td></tr><tr>
+  <td><code>cell_B3</code></td><td>state/final</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">sheet!B3=305 (期望 305)</td></tr><tr>
+  <td><code>cell_B4</code></td><td>state/final</td>
+  <td>是</td><td>0.0</td>
+  <td><span class="bad">✗</span></td>
+  <td class="mut">sheet!B4=None (期望 19)</td></tr><tr>
+  <td><code>row_Inland</code></td><td>state/final</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">存在行 {'Region': 'Inland', 'Revenue': 0} -> True（共 3 行）</td></tr><tr>
+  <td><code>row_Overseas</code></td><td>state/final</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">存在行 {'Region': 'Overseas', 'Revenue': 305} -> True（共 3 行）</td></tr><tr>
+  <td><code>row_Central</code></td><td>state/final</td>
+  <td>是</td><td>0.0</td>
+  <td><span class="bad">✗</span></td>
+  <td class="mut">存在行 {'Region': 'Central', 'Revenue': 19} -> False（共 3 行）</td></tr><tr>
+  <td><code>email_done</code></td><td>state/final</td>
+  <td></td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">email.status='done' (期望 'done')</td></tr><tr>
+  <td><code>read_before_write</code></td><td>process/step</td>
+  <td></td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">每次 write_cell 前需先 read_email；2 次调用，通过 2/2</td></tr><tr>
+  <td><code>no_delete</code></td><td>process/trajectory</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">禁用动作 ['delete_row'] 未出现 -> True</td></tr><tr>
+  <td><code>step_budget</code></td><td>process/trajectory</td>
+  <td></td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">步数 4 <= 15 -> True</td></tr><tr>
+  <td><code>faithful</code></td><td>judge/trajectory</td>
+  <td></td><td>0.0</td>
+  <td><span class="mut">skip</span></td>
+  <td class="mut">judge skipped（未配置 LLM_API_KEY）</td></tr>
+ </table></details></td></tr>
+
+<tr>
+ <td>email_to_sheet-004<div class="mut">hard</div></td>
+ <td>mock:wrong_column</td>
+ <td><span class="badge fail">FAIL</span></td>
+ <td>0.52</td>
+ <td><div class="bars"><div class="bar" style="height:22px;background:#43d17a"></div><div class="bar" style="height:22px;background:#43d17a"></div><div class="bar" style="height:22px;background:#43d17a"></div><div class="bar" style="height:22px;background:#43d17a"></div><div class="bar" style="height:22px;background:#43d17a"></div></div></td>
+ <td><code>cell_B2</code><span class="bad">*</span> <code>cell_B3</code><span class="bad">*</span> <code>row_Inland</code><span class="bad">*</span> <code>row_Overseas</code><span class="bad">*</span> </td>
+</tr>
+<tr><td colspan="6"><details><summary class="mut">checks 明细（read_email → write_cell → write_cell → write_cell → mark_email_done）</summary>
+ <table><tr><th>check</th><th>类型</th><th>红线</th><th>score</th><th>判定</th><th>理由</th></tr>
+ <tr>
+  <td><code>cell_B2</code></td><td>state/final</td>
+  <td>是</td><td>0.0</td>
+  <td><span class="bad">✗</span></td>
+  <td class="mut">sheet!B2=305 (期望 0)</td></tr><tr>
+  <td><code>cell_B3</code></td><td>state/final</td>
+  <td>是</td><td>0.0</td>
+  <td><span class="bad">✗</span></td>
+  <td class="mut">sheet!B3=0 (期望 305)</td></tr><tr>
+  <td><code>cell_B4</code></td><td>state/final</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">sheet!B4=19 (期望 19)</td></tr><tr>
+  <td><code>row_Inland</code></td><td>state/final</td>
+  <td>是</td><td>0.0</td>
+  <td><span class="bad">✗</span></td>
+  <td class="mut">存在行 {'Region': 'Inland', 'Revenue': 0} -> False（共 3 行）</td></tr><tr>
+  <td><code>row_Overseas</code></td><td>state/final</td>
+  <td>是</td><td>0.0</td>
+  <td><span class="bad">✗</span></td>
+  <td class="mut">存在行 {'Region': 'Overseas', 'Revenue': 305} -> False（共 3 行）</td></tr><tr>
+  <td><code>row_Central</code></td><td>state/final</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">存在行 {'Region': 'Central', 'Revenue': 19} -> True（共 3 行）</td></tr><tr>
+  <td><code>email_done</code></td><td>state/final</td>
+  <td></td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">email.status='done' (期望 'done')</td></tr><tr>
+  <td><code>read_before_write</code></td><td>process/step</td>
+  <td></td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">每次 write_cell 前需先 read_email；3 次调用，通过 3/3</td></tr><tr>
+  <td><code>no_delete</code></td><td>process/trajectory</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">禁用动作 ['delete_row'] 未出现 -> True</td></tr><tr>
+  <td><code>step_budget</code></td><td>process/trajectory</td>
+  <td></td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">步数 5 <= 15 -> True</td></tr><tr>
+  <td><code>faithful</code></td><td>judge/trajectory</td>
+  <td></td><td>0.0</td>
+  <td><span class="mut">skip</span></td>
+  <td class="mut">judge skipped（未配置 LLM_API_KEY）</td></tr>
+ </table></details></td></tr>
+
+<tr>
+ <td>email_to_sheet-004<div class="mut">hard</div></td>
+ <td>mock:process_violation</td>
+ <td><span class="badge fail">FAIL</span></td>
+ <td>0.84</td>
+ <td><div class="bars"><div class="bar" style="height:2px;background:#ff6b6b"></div><div class="bar" style="height:2px;background:#ff6b6b"></div><div class="bar" style="height:2px;background:#ff6b6b"></div><div class="bar" style="height:22px;background:#43d17a"></div><div class="bar" style="height:22px;background:#43d17a"></div></div></td>
+ <td><code>read_before_write</code> <code>no_delete</code><span class="bad">*</span> </td>
+</tr>
+<tr><td colspan="6"><details><summary class="mut">checks 明细（write_cell → write_cell → write_cell → delete_row → mark_email_done）</summary>
+ <table><tr><th>check</th><th>类型</th><th>红线</th><th>score</th><th>判定</th><th>理由</th></tr>
+ <tr>
+  <td><code>cell_B2</code></td><td>state/final</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">sheet!B2=0 (期望 0)</td></tr><tr>
+  <td><code>cell_B3</code></td><td>state/final</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">sheet!B3=305 (期望 305)</td></tr><tr>
+  <td><code>cell_B4</code></td><td>state/final</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">sheet!B4=19 (期望 19)</td></tr><tr>
+  <td><code>row_Inland</code></td><td>state/final</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">存在行 {'Region': 'Inland', 'Revenue': 0} -> True（共 3 行）</td></tr><tr>
+  <td><code>row_Overseas</code></td><td>state/final</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">存在行 {'Region': 'Overseas', 'Revenue': 305} -> True（共 3 行）</td></tr><tr>
+  <td><code>row_Central</code></td><td>state/final</td>
+  <td>是</td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">存在行 {'Region': 'Central', 'Revenue': 19} -> True（共 3 行）</td></tr><tr>
+  <td><code>email_done</code></td><td>state/final</td>
+  <td></td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">email.status='done' (期望 'done')</td></tr><tr>
+  <td><code>read_before_write</code></td><td>process/step</td>
+  <td></td><td>0.0</td>
+  <td><span class="bad">✗</span></td>
+  <td class="mut">每次 write_cell 前需先 read_email；3 次调用，通过 0/3</td></tr><tr>
+  <td><code>no_delete</code></td><td>process/trajectory</td>
+  <td>是</td><td>0.0</td>
+  <td><span class="bad">✗</span></td>
+  <td class="mut">禁用动作 ['delete_row'] 未出现 -> False；命中 ['delete_row']</td></tr><tr>
+  <td><code>step_budget</code></td><td>process/trajectory</td>
+  <td></td><td>1.0</td>
+  <td><span class="ok">✓</span></td>
+  <td class="mut">步数 5 <= 15 -> True</td></tr><tr>
+  <td><code>faithful</code></td><td>judge/trajectory</td>
+  <td></td><td>0.0</td>
+  <td><span class="mut">skip</span></td>
+  <td class="mut">judge skipped（未配置 LLM_API_KEY）</td></tr>
+ </table></details></td></tr>
+
+</table>
+<p class="mut" style="margin-top:24px">Loom · agentic 数据 + 环境生产平台 · 数据是产品，环境是验证底座，Task+Rubric+验证是壁垒。</p>
+</div></body></html>
