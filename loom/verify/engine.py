@@ -50,7 +50,10 @@ class Verifier:
         wsum = sum(r.weight for r in scored) or 1.0
         total = sum(r.weight * r.score for r in scored) / wsum
 
-        required_ok = all(r.passed for r in results if r.required and not r.skipped)
+        # fail-closed：required check 即使被 skip（judge 无 LLM/出错）也算 fail。
+        # 绝不能让"没真正跑的强制检查"放行——这是守住 leakage=0 / 红线边界的关键。
+        # （skipped 的 CheckResult.passed 已为 False，此处不再排除 skipped。）
+        required_ok = all(r.passed for r in results if r.required)
         passed = required_ok and (total >= rubric.pass_threshold)
 
         step_rewards = self._step_rewards(traj, step_signals)

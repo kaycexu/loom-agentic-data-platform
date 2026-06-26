@@ -8,11 +8,13 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from jinja2 import Template
+from jinja2 import Environment
 
 from loom.trace.store import RunDir
 
-_TEMPLATE = Template(
+# autoescape=True：trace 来源字段（任务/邮件内容、policy、judge/tool 输出、check 理由）
+# 注入 HTML 前自动转义，防止 trace 内容在看板里被当作 HTML/JS 执行（XSS）。
+_TEMPLATE = Environment(autoescape=True).from_string(
     """<!doctype html><html lang="zh"><head><meta charset="utf-8">
 <title>{{ title }}</title>
 <style>

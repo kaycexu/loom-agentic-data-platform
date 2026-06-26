@@ -24,7 +24,7 @@ class LLMConfig:
 
 def llm_config() -> LLMConfig:
     return LLMConfig(
-        base_url=os.environ.get("LOOM_LLM_BASE_URL", "https://llm-proxy.tapsvc.com"),
+        base_url=os.environ.get("LOOM_LLM_BASE_URL", "https://llm-proxy.tapsvc.com/v1"),
         model=os.environ.get("LOOM_LLM_MODEL", "deepseek/deepseek-v4-flash"),
         api_key=os.environ.get("LOOM_LLM_API_KEY") or os.environ.get("OPENAI_API_KEY"),
         timeout=float(os.environ.get("LOOM_LLM_TIMEOUT", "60")),

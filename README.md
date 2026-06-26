@@ -81,7 +81,7 @@ loom report --run out/demo               # 重新渲染看板
 
 ```bash
 export LOOM_LLM_API_KEY=...               # OpenAI 兼容代理
-# 默认 base=https://llm-proxy.tapsvc.com, model=deepseek/deepseek-v4-flash（可用环境变量覆盖）
+# 默认 base=https://llm-proxy.tapsvc.com/v1, model=deepseek/deepseek-v4-flash（可用环境变量覆盖）
 loom run --policy llm --limit 2 --browser
 ```
 

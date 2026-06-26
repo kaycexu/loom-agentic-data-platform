@@ -5,6 +5,7 @@ from __future__ import annotations
 import pytest
 
 from loom.contracts import (
+    JudgeCheck,
     ProcessCheck,
     RubricCheck,
     RubricSpec,
@@ -125,6 +126,35 @@ def test_process_violation_caught_despite_correct_outcome():
     assert read_first.passed is False
     # step_rewards 应在 write 步上体现惩罚（< 1.0）
     assert min(rep.step_rewards) < 1.0
+
+
+def test_required_judge_skipped_fails_closed():
+    """★fail-closed 回归：被标 required 的 judge check 在无 LLM 时被跳过，
+    即便所有确定性检查通过，整体也必须 fail —— 不能让'没真正跑的强制检查'放行。"""
+    rubric = RubricSpec(rubric_id="r-fc", pass_threshold=0.5, checks=[
+        RubricCheck(check_id="row_north", required=True, weight=1,
+                    spec=StateCheck(op="cell_equals", args={"cell": "B2", "value": 120})),
+        RubricCheck(check_id="must_judge", required=True, weight=1,
+                    spec=JudgeCheck(rubric_text="必须由 LLM 评审，不可跳过")),
+    ])
+    steps = [_step(0, "read_email"), _step(1, "write_cell", cell="B2", value=120)]
+    rep = Verifier().verify(TASK, rubric, _traj(steps, GOOD_STATE))  # StubJudge：无 LLM
+    judge = next(c for c in rep.checks if c.check_id == "must_judge")
+    assert judge.skipped is True
+    assert rep.passed is False  # required judge 没真正跑 → fail-closed
+
+
+def test_optional_judge_skipped_still_passes():
+    """对照：非 required 的 judge 被跳过不影响通过（只是不计权）。"""
+    rubric = RubricSpec(rubric_id="r-opt", pass_threshold=0.5, checks=[
+        RubricCheck(check_id="row_north", required=True, weight=1,
+                    spec=StateCheck(op="cell_equals", args={"cell": "B2", "value": 120})),
+        RubricCheck(check_id="opt_judge", required=False, weight=1,
+                    spec=JudgeCheck(rubric_text="可选评审")),
+    ])
+    steps = [_step(0, "read_email"), _step(1, "write_cell", cell="B2", value=120)]
+    rep = Verifier().verify(TASK, rubric, _traj(steps, GOOD_STATE))
+    assert rep.passed is True
 
 
 def test_step_rewards_aligned_to_steps():

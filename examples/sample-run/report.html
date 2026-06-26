@@ -53,7 +53,7 @@
 <div class="chips">
  <span class="chip">tasks <b>1000</b></span>
  <span class="chip">wall <b>0.112s</b></span>
- <span class="chip">吞吐 <b>8900.8/s</b></span>
+ <span class="chip">吞吐 <b>8927.4/s</b></span>
  <span class="chip">pass rate <b>0.7</b></span>
  <span class="chip">重试 <b>0</b></span>
 </div>
@@ -78,7 +78,7 @@
  <span class="chip">去重丢弃 <b>0</b></span>
  <span class="chip">policy <b>mock-oracle</b></span>
 </div>
-<p class="mut">交付格式：SFT(sft.jsonl) · RL(rl.jsonl) · Task+Rubric bundle/ · manifest.json（provenance 可复现）。难度分布：{'easy': 1, 'medium': 2, 'hard': 2}</p>
+<p class="mut">交付格式：SFT(sft.jsonl) · RL(rl.jsonl) · Task+Rubric bundle/ · manifest.json（provenance 可复现）。难度分布：{&#39;easy&#39;: 1, &#39;medium&#39;: 2, &#39;hard&#39;: 2}</p>
 <div class="hist">
 
  <div class="col"><div class="h" style="height:0px"></div>0<span>[0,0.2)</span></div>
@@ -122,19 +122,19 @@
   <td><code>row_North</code></td><td>state/final</td>
   <td>是</td><td>1.0</td>
   <td><span class="ok">✓</span></td>
-  <td class="mut">存在行 {'Region': 'North', 'Revenue': 120} -> True（共 3 行）</td></tr><tr>
+  <td class="mut">存在行 {&#39;Region&#39;: &#39;North&#39;, &#39;Revenue&#39;: 120} -&gt; True（共 3 行）</td></tr><tr>
   <td><code>row_South</code></td><td>state/final</td>
   <td>是</td><td>1.0</td>
   <td><span class="ok">✓</span></td>
-  <td class="mut">存在行 {'Region': 'South', 'Revenue': 95} -> True（共 3 行）</td></tr><tr>
+  <td class="mut">存在行 {&#39;Region&#39;: &#39;South&#39;, &#39;Revenue&#39;: 95} -&gt; True（共 3 行）</td></tr><tr>
   <td><code>row_West</code></td><td>state/final</td>
   <td>是</td><td>1.0</td>
   <td><span class="ok">✓</span></td>
-  <td class="mut">存在行 {'Region': 'West', 'Revenue': 143} -> True（共 3 行）</td></tr><tr>
+  <td class="mut">存在行 {&#39;Region&#39;: &#39;West&#39;, &#39;Revenue&#39;: 143} -&gt; True（共 3 行）</td></tr><tr>
   <td><code>email_done</code></td><td>state/final</td>
   <td></td><td>1.0</td>
   <td><span class="ok">✓</span></td>
-  <td class="mut">email.status='done' (期望 'done')</td></tr><tr>
+  <td class="mut">email.status=&#39;done&#39; (期望 &#39;done&#39;)</td></tr><tr>
   <td><code>read_before_write</code></td><td>process/step</td>
   <td></td><td>1.0</td>
   <td><span class="ok">✓</span></td>
@@ -142,11 +142,11 @@
   <td><code>no_delete</code></td><td>process/trajectory</td>
   <td>是</td><td>1.0</td>
   <td><span class="ok">✓</span></td>
-  <td class="mut">禁用动作 ['delete_row'] 未出现 -> True</td></tr><tr>
+  <td class="mut">禁用动作 [&#39;delete_row&#39;] 未出现 -&gt; True</td></tr><tr>
   <td><code>step_budget</code></td><td>process/trajectory</td>
   <td></td><td>1.0</td>
   <td><span class="ok">✓</span></td>
-  <td class="mut">步数 5 <= 15 -> True</td></tr><tr>
+  <td class="mut">步数 5 &lt;= 15 -&gt; True</td></tr><tr>
   <td><code>faithful</code></td><td>judge/trajectory</td>
   <td></td><td>0.0</td>
   <td><span class="mut">skip</span></td>
@@ -179,19 +179,19 @@
   <td><code>row_North</code></td><td>state/final</td>
   <td>是</td><td>1.0</td>
   <td><span class="ok">✓</span></td>
-  <td class="mut">存在行 {'Region': 'North', 'Revenue': 120} -> True（共 3 行）</td></tr><tr>
+  <td class="mut">存在行 {&#39;Region&#39;: &#39;North&#39;, &#39;Revenue&#39;: 120} -&gt; True（共 3 行）</td></tr><tr>
   <td><code>row_South</code></td><td>state/final</td>
   <td>是</td><td>1.0</td>
   <td><span class="ok">✓</span></td>
-  <td class="mut">存在行 {'Region': 'South', 'Revenue': 95} -> True（共 3 行）</td></tr><tr>
+  <td class="mut">存在行 {&#39;Region&#39;: &#39;South&#39;, &#39;Revenue&#39;: 95} -&gt; True（共 3 行）</td></tr><tr>
   <td><code>row_West</code></td><td>state/final</td>
   <td>是</td><td>0.0</td>
   <td><span class="bad">✗</span></td>
-  <td class="mut">存在行 {'Region': 'West', 'Revenue': 143} -> False（共 3 行）</td></tr><tr>
+  <td class="mut">存在行 {&#39;Region&#39;: &#39;West&#39;, &#39;Revenue&#39;: 143} -&gt; False（共 3 行）</td></tr><tr>
   <td><code>email_done</code></td><td>state/final</td>
   <td></td><td>1.0</td>
   <td><span class="ok">✓</span></td>
-  <td class="mut">email.status='done' (期望 'done')</td></tr><tr>
+  <td class="mut">email.status=&#39;done&#39; (期望 &#39;done&#39;)</td></tr><tr>
   <td><code>read_before_write</code></td><td>process/step</td>
   <td></td><td>1.0</td>
   <td><span class="ok">✓</span></td>
@@ -199,11 +199,11 @@
   <td><code>no_delete</code></td><td>process/trajectory</td>
   <td>是</td><td>1.0</td>
   <td><span class="ok">✓</span></td>
-  <td class="mut">禁用动作 ['delete_row'] 未出现 -> True</td></tr><tr>
+  <td class="mut">禁用动作 [&#39;delete_row&#39;] 未出现 -&gt; True</td></tr><tr>
   <td><code>step_budget</code></td><td>process/trajectory</td>
   <td></td><td>1.0</td>
   <td><span class="ok">✓</span></td>
-  <td class="mut">步数 4 <= 15 -> True</td></tr><tr>
+  <td class="mut">步数 4 &lt;= 15 -&gt; True</td></tr><tr>
   <td><code>faithful</code></td><td>judge/trajectory</td>
   <td></td><td>0.0</td>
   <td><span class="mut">skip</span></td>
@@ -236,19 +236,19 @@
   <td><code>row_North</code></td><td>state/final</td>
   <td>是</td><td>0.0</td>
   <td><span class="bad">✗</span></td>
-  <td class="mut">存在行 {'Region': 'North', 'Revenue': 120} -> False（共 3 行）</td></tr><tr>
+  <td class="mut">存在行 {&#39;Region&#39;: &#39;North&#39;, &#39;Revenue&#39;: 120} -&gt; False（共 3 行）</td></tr><tr>
   <td><code>row_South</code></td><td>state/final</td>
   <td>是</td><td>0.0</td>
   <td><span class="bad">✗</span></td>
-  <td class="mut">存在行 {'Region': 'South', 'Revenue': 95} -> False（共 3 行）</td></tr><tr>
+  <td class="mut">存在行 {&#39;Region&#39;: &#39;South&#39;, &#39;Revenue&#39;: 95} -&gt; False（共 3 行）</td></tr><tr>
   <td><code>row_West</code></td><td>state/final</td>
   <td>是</td><td>1.0</td>
   <td><span class="ok">✓</span></td>
-  <td class="mut">存在行 {'Region': 'West', 'Revenue': 143} -> True（共 3 行）</td></tr><tr>
+  <td class="mut">存在行 {&#39;Region&#39;: &#39;West&#39;, &#39;Revenue&#39;: 143} -&gt; True（共 3 行）</td></tr><tr>
   <td><code>email_done</code></td><td>state/final</td>
   <td></td><td>1.0</td>
   <td><span class="ok">✓</span></td>
-  <td class="mut">email.status='done' (期望 'done')</td></tr><tr>
+  <td class="mut">email.status=&#39;done&#39; (期望 &#39;done&#39;)</td></tr><tr>
   <td><code>read_before_write</code></td><td>process/step</td>
   <td></td><td>1.0</td>
   <td><span class="ok">✓</span></td>
@@ -256,11 +256,11 @@
   <td><code>no_delete</code></td><td>process/trajectory</td>
   <td>是</td><td>1.0</td>
   <td><span class="ok">✓</span></td>
-  <td class="mut">禁用动作 ['delete_row'] 未出现 -> True</td></tr><tr>
+  <td class="mut">禁用动作 [&#39;delete_row&#39;] 未出现 -&gt; True</td></tr><tr>
   <td><code>step_budget</code></td><td>process/trajectory</td>
   <td></td><td>1.0</td>
   <td><span class="ok">✓</span></td>
-  <td class="mut">步数 5 <= 15 -> True</td></tr><tr>
+  <td class="mut">步数 5 &lt;= 15 -&gt; True</td></tr><tr>
   <td><code>faithful</code></td><td>judge/trajectory</td>
   <td></td><td>0.0</td>
   <td><span class="mut">skip</span></td>
@@ -293,19 +293,19 @@
   <td><code>row_North</code></td><td>state/final</td>
   <td>是</td><td>1.0</td>
   <td><span class="ok">✓</span></td>
-  <td class="mut">存在行 {'Region': 'North', 'Revenue': 120} -> True（共 3 行）</td></tr><tr>
+  <td class="mut">存在行 {&#39;Region&#39;: &#39;North&#39;, &#39;Revenue&#39;: 120} -&gt; True（共 3 行）</td></tr><tr>
   <td><code>row_South</code></td><td>state/final</td>
   <td>是</td><td>1.0</td>
   <td><span class="ok">✓</span></td>
-  <td class="mut">存在行 {'Region': 'South', 'Revenue': 95} -> True（共 3 行）</td></tr><tr>
+  <td class="mut">存在行 {&#39;Region&#39;: &#39;South&#39;, &#39;Revenue&#39;: 95} -&gt; True（共 3 行）</td></tr><tr>
   <td><code>row_West</code></td><td>state/final</td>
   <td>是</td><td>1.0</td>
   <td><span class="ok">✓</span></td>
-  <td class="mut">存在行 {'Region': 'West', 'Revenue': 143} -> True（共 3 行）</td></tr><tr>
+  <td class="mut">存在行 {&#39;Region&#39;: &#39;West&#39;, &#39;Revenue&#39;: 143} -&gt; True（共 3 行）</td></tr><tr>
   <td><code>email_done</code></td><td>state/final</td>
   <td></td><td>1.0</td>
   <td><span class="ok">✓</span></td>
-  <td class="mut">email.status='done' (期望 'done')</td></tr><tr>
+  <td class="mut">email.status=&#39;done&#39; (期望 &#39;done&#39;)</td></tr><tr>
   <td><code>read_before_write</code></td><td>process/step</td>
   <td></td><td>0.0</td>
   <td><span class="bad">✗</span></td>
@@ -313,11 +313,11 @@
   <td><code>no_delete</code></td><td>process/trajectory</td>
   <td>是</td><td>0.0</td>
   <td><span class="bad">✗</span></td>
-  <td class="mut">禁用动作 ['delete_row'] 未出现 -> False；命中 ['delete_row']</td></tr><tr>
+  <td class="mut">禁用动作 [&#39;delete_row&#39;] 未出现 -&gt; False；命中 [&#39;delete_row&#39;]</td></tr><tr>
   <td><code>step_budget</code></td><td>process/trajectory</td>
   <td></td><td>1.0</td>
   <td><span class="ok">✓</span></td>
-  <td class="mut">步数 5 <= 15 -> True</td></tr><tr>
+  <td class="mut">步数 5 &lt;= 15 -&gt; True</td></tr><tr>
   <td><code>faithful</code></td><td>judge/trajectory</td>
   <td></td><td>0.0</td>
   <td><span class="mut">skip</span></td>
@@ -350,19 +350,19 @@
   <td><code>row_East</code></td><td>state/final</td>
   <td>是</td><td>1.0</td>
   <td><span class="ok">✓</span></td>
-  <td class="mut">存在行 {'Region': 'East', 'Revenue': 88} -> True（共 3 行）</td></tr><tr>
+  <td class="mut">存在行 {&#39;Region&#39;: &#39;East&#39;, &#39;Revenue&#39;: 88} -&gt; True（共 3 行）</td></tr><tr>
   <td><code>row_West</code></td><td>state/final</td>
   <td>是</td><td>1.0</td>
   <td><span class="ok">✓</span></td>
-  <td class="mut">存在行 {'Region': 'West', 'Revenue': 156} -> True（共 3 行）</td></tr><tr>
+  <td class="mut">存在行 {&#39;Region&#39;: &#39;West&#39;, &#39;Revenue&#39;: 156} -&gt; True（共 3 行）</td></tr><tr>
   <td><code>row_Central</code></td><td>state/final</td>
   <td>是</td><td>1.0</td>
   <td><span class="ok">✓</span></td>
-  <td class="mut">存在行 {'Region': 'Central', 'Revenue': 102} -> True（共 3 行）</td></tr><tr>
+  <td class="mut">存在行 {&#39;Region&#39;: &#39;Central&#39;, &#39;Revenue&#39;: 102} -&gt; True（共 3 行）</td></tr><tr>
   <td><code>email_done</code></td><td>state/final</td>
   <td></td><td>1.0</td>
   <td><span class="ok">✓</span></td>
-  <td class="mut">email.status='done' (期望 'done')</td></tr><tr>
+  <td class="mut">email.status=&#39;done&#39; (期望 &#39;done&#39;)</td></tr><tr>
   <td><code>read_before_write</code></td><td>process/step</td>
   <td></td><td>1.0</td>
   <td><span class="ok">✓</span></td>
@@ -370,11 +370,11 @@
   <td><code>no_delete</code></td><td>process/trajectory</td>
   <td>是</td><td>1.0</td>
   <td><span class="ok">✓</span></td>
-  <td class="mut">禁用动作 ['delete_row'] 未出现 -> True</td></tr><tr>
+  <td class="mut">禁用动作 [&#39;delete_row&#39;] 未出现 -&gt; True</td></tr><tr>
   <td><code>step_budget</code></td><td>process/trajectory</td>
   <td></td><td>1.0</td>
   <td><span class="ok">✓</span></td>
-  <td class="mut">步数 5 <= 15 -> True</td></tr><tr>
+  <td class="mut">步数 5 &lt;= 15 -&gt; True</td></tr><tr>
   <td><code>faithful</code></td><td>judge/trajectory</td>
   <td></td><td>0.0</td>
   <td><span class="mut">skip</span></td>
@@ -407,19 +407,19 @@
   <td><code>row_East</code></td><td>state/final</td>
   <td>是</td><td>1.0</td>
   <td><span class="ok">✓</span></td>
-  <td class="mut">存在行 {'Region': 'East', 'Revenue': 88} -> True（共 3 行）</td></tr><tr>
+  <td class="mut">存在行 {&#39;Region&#39;: &#39;East&#39;, &#39;Revenue&#39;: 88} -&gt; True（共 3 行）</td></tr><tr>
   <td><code>row_West</code></td><td>state/final</td>
   <td>是</td><td>1.0</td>
   <td><span class="ok">✓</span></td>
-  <td class="mut">存在行 {'Region': 'West', 'Revenue': 156} -> True（共 3 行）</td></tr><tr>
+  <td class="mut">存在行 {&#39;Region&#39;: &#39;West&#39;, &#39;Revenue&#39;: 156} -&gt; True（共 3 行）</td></tr><tr>
   <td><code>row_Central</code></td><td>state/final</td>
   <td>是</td><td>0.0</td>
   <td><span class="bad">✗</span></td>
-  <td class="mut">存在行 {'Region': 'Central', 'Revenue': 102} -> False（共 3 行）</td></tr><tr>
+  <td class="mut">存在行 {&#39;Region&#39;: &#39;Central&#39;, &#39;Revenue&#39;: 102} -&gt; False（共 3 行）</td></tr><tr>
   <td><code>email_done</code></td><td>state/final</td>
   <td></td><td>1.0</td>
   <td><span class="ok">✓</span></td>
-  <td class="mut">email.status='done' (期望 'done')</td></tr><tr>
+  <td class="mut">email.status=&#39;done&#39; (期望 &#39;done&#39;)</td></tr><tr>
   <td><code>read_before_write</code></td><td>process/step</td>
   <td></td><td>1.0</td>
   <td><span class="ok">✓</span></td>
@@ -427,11 +427,11 @@
   <td><code>no_delete</code></td><td>process/trajectory</td>
   <td>是</td><td>1.0</td>
   <td><span class="ok">✓</span></td>
-  <td class="mut">禁用动作 ['delete_row'] 未出现 -> True</td></tr><tr>
+  <td class="mut">禁用动作 [&#39;delete_row&#39;] 未出现 -&gt; True</td></tr><tr>
   <td><code>step_budget</code></td><td>process/trajectory</td>
   <td></td><td>1.0</td>
   <td><span class="ok">✓</span></td>
-  <td class="mut">步数 4 <= 15 -> True</td></tr><tr>
+  <td class="mut">步数 4 &lt;= 15 -&gt; True</td></tr><tr>
   <td><code>faithful</code></td><td>judge/trajectory</td>
   <td></td><td>0.0</td>
   <td><span class="mut">skip</span></td>
@@ -464,19 +464,19 @@
   <td><code>row_East</code></td><td>state/final</td>
   <td>是</td><td>0.0</td>
   <td><span class="bad">✗</span></td>
-  <td class="mut">存在行 {'Region': 'East', 'Revenue': 88} -> False（共 3 行）</td></tr><tr>
+  <td class="mut">存在行 {&#39;Region&#39;: &#39;East&#39;, &#39;Revenue&#39;: 88} -&gt; False（共 3 行）</td></tr><tr>
   <td><code>row_West</code></td><td>state/final</td>
   <td>是</td><td>0.0</td>
   <td><span class="bad">✗</span></td>
-  <td class="mut">存在行 {'Region': 'West', 'Revenue': 156} -> False（共 3 行）</td></tr><tr>
+  <td class="mut">存在行 {&#39;Region&#39;: &#39;West&#39;, &#39;Revenue&#39;: 156} -&gt; False（共 3 行）</td></tr><tr>
   <td><code>row_Central</code></td><td>state/final</td>
   <td>是</td><td>1.0</td>
   <td><span class="ok">✓</span></td>
-  <td class="mut">存在行 {'Region': 'Central', 'Revenue': 102} -> True（共 3 行）</td></tr><tr>
+  <td class="mut">存在行 {&#39;Region&#39;: &#39;Central&#39;, &#39;Revenue&#39;: 102} -&gt; True（共 3 行）</td></tr><tr>
   <td><code>email_done</code></td><td>state/final</td>
   <td></td><td>1.0</td>
   <td><span class="ok">✓</span></td>
-  <td class="mut">email.status='done' (期望 'done')</td></tr><tr>
+  <td class="mut">email.status=&#39;done&#39; (期望 &#39;done&#39;)</td></tr><tr>
   <td><code>read_before_write</code></td><td>process/step</td>
   <td></td><td>1.0</td>
   <td><span class="ok">✓</span></td>
@@ -484,11 +484,11 @@
   <td><code>no_delete</code></td><td>process/trajectory</td>
   <td>是</td><td>1.0</td>
   <td><span class="ok">✓</span></td>
-  <td class="mut">禁用动作 ['delete_row'] 未出现 -> True</td></tr><tr>
+  <td class="mut">禁用动作 [&#39;delete_row&#39;] 未出现 -&gt; True</td></tr><tr>
   <td><code>step_budget</code></td><td>process/trajectory</td>
   <td></td><td>1.0</td>
   <td><span class="ok">✓</span></td>
-  <td class="mut">步数 5 <= 15 -> True</td></tr><tr>
+  <td class="mut">步数 5 &lt;= 15 -&gt; True</td></tr><tr>
   <td><code>faithful</code></td><td>judge/trajectory</td>
   <td></td><td>0.0</td>
   <td><span class="mut">skip</span></td>
@@ -521,19 +521,19 @@
   <td><code>row_East</code></td><td>state/final</td>
   <td>是</td><td>1.0</td>
   <td><span class="ok">✓</span></td>
-  <td class="mut">存在行 {'Region': 'East', 'Revenue': 88} -> True（共 3 行）</td></tr><tr>
+  <td class="mut">存在行 {&#39;Region&#39;: &#39;East&#39;, &#39;Revenue&#39;: 88} -&gt; True（共 3 行）</td></tr><tr>
   <td><code>row_West</code></td><td>state/final</td>
   <td>是</td><td>1.0</td>
   <td><span class="ok">✓</span></td>
-  <td class="mut">存在行 {'Region': 'West', 'Revenue': 156} -> True（共 3 行）</td></tr><tr>
+  <td class="mut">存在行 {&#39;Region&#39;: &#39;West&#39;, &#39;Revenue&#39;: 156} -&gt; True（共 3 行）</td></tr><tr>
   <td><code>row_Central</code></td><td>state/final</td>
   <td>是</td><td>1.0</td>
   <td><span class="ok">✓</span></td>
-  <td class="mut">存在行 {'Region': 'Central', 'Revenue': 102} -> True（共 3 行）</td></tr><tr>
+  <td class="mut">存在行 {&#39;Region&#39;: &#39;Central&#39;, &#39;Revenue&#39;: 102} -&gt; True（共 3 行）</td></tr><tr>
   <td><code>email_done</code></td><td>state/final</td>
   <td></td><td>1.0</td>
   <td><span class="ok">✓</span></td>
-  <td class="mut">email.status='done' (期望 'done')</td></tr><tr>
+  <td class="mut">email.status=&#39;done&#39; (期望 &#39;done&#39;)</td></tr><tr>
   <td><code>read_before_write</code></td><td>process/step</td>
   <td></td><td>0.0</td>
   <td><span class="bad">✗</span></td>
@@ -541,11 +541,11 @@
   <td><code>no_delete</code></td><td>process/trajectory</td>
   <td>是</td><td>0.0</td>
   <td><span class="bad">✗</span></td>
-  <td class="mut">禁用动作 ['delete_row'] 未出现 -> False；命中 ['delete_row']</td></tr><tr>
+  <td class="mut">禁用动作 [&#39;delete_row&#39;] 未出现 -&gt; False；命中 [&#39;delete_row&#39;]</td></tr><tr>
   <td><code>step_budget</code></td><td>process/trajectory</td>
   <td></td><td>1.0</td>
   <td><span class="ok">✓</span></td>
-  <td class="mut">步数 5 <= 15 -> True</td></tr><tr>
+  <td class="mut">步数 5 &lt;= 15 -&gt; True</td></tr><tr>
   <td><code>faithful</code></td><td>judge/trajectory</td>
   <td></td><td>0.0</td>
   <td><span class="mut">skip</span></td>
@@ -578,19 +578,19 @@
   <td><code>row_North</code></td><td>state/final</td>
   <td>是</td><td>1.0</td>
   <td><span class="ok">✓</span></td>
-  <td class="mut">存在行 {'Region': 'North', 'Revenue': 200} -> True（共 3 行）</td></tr><tr>
+  <td class="mut">存在行 {&#39;Region&#39;: &#39;North&#39;, &#39;Revenue&#39;: 200} -&gt; True（共 3 行）</td></tr><tr>
   <td><code>row_Northeast</code></td><td>state/final</td>
   <td>是</td><td>1.0</td>
   <td><span class="ok">✓</span></td>
-  <td class="mut">存在行 {'Region': 'Northeast', 'Revenue': 77} -> True（共 3 行）</td></tr><tr>
+  <td class="mut">存在行 {&#39;Region&#39;: &#39;Northeast&#39;, &#39;Revenue&#39;: 77} -&gt; True（共 3 行）</td></tr><tr>
   <td><code>row_Coastal</code></td><td>state/final</td>
   <td>是</td><td>1.0</td>
   <td><span class="ok">✓</span></td>
-  <td class="mut">存在行 {'Region': 'Coastal', 'Revenue': 134} -> True（共 3 行）</td></tr><tr>
+  <td class="mut">存在行 {&#39;Region&#39;: &#39;Coastal&#39;, &#39;Revenue&#39;: 134} -&gt; True（共 3 行）</td></tr><tr>
   <td><code>email_done</code></td><td>state/final</td>
   <td></td><td>1.0</td>
   <td><span class="ok">✓</span></td>
-  <td class="mut">email.status='done' (期望 'done')</td></tr><tr>
+  <td class="mut">email.status=&#39;done&#39; (期望 &#39;done&#39;)</td></tr><tr>
   <td><code>read_before_write</code></td><td>process/step</td>
   <td></td><td>1.0</td>
   <td><span class="ok">✓</span></td>
@@ -598,11 +598,11 @@
   <td><code>no_delete</code></td><td>process/trajectory</td>
   <td>是</td><td>1.0</td>
   <td><span class="ok">✓</span></td>
-  <td class="mut">禁用动作 ['delete_row'] 未出现 -> True</td></tr><tr>
+  <td class="mut">禁用动作 [&#39;delete_row&#39;] 未出现 -&gt; True</td></tr><tr>
   <td><code>step_budget</code></td><td>process/trajectory</td>
   <td></td><td>1.0</td>
   <td><span class="ok">✓</span></td>
-  <td class="mut">步数 5 <= 15 -> True</td></tr><tr>
+  <td class="mut">步数 5 &lt;= 15 -&gt; True</td></tr><tr>
   <td><code>faithful</code></td><td>judge/trajectory</td>
   <td></td><td>0.0</td>
   <td><span class="mut">skip</span></td>
@@ -635,19 +635,19 @@
   <td><code>row_North</code></td><td>state/final</td>
   <td>是</td><td>1.0</td>
   <td><span class="ok">✓</span></td>
-  <td class="mut">存在行 {'Region': 'North', 'Revenue': 200} -> True（共 3 行）</td></tr><tr>
+  <td class="mut">存在行 {&#39;Region&#39;: &#39;North&#39;, &#39;Revenue&#39;: 200} -&gt; True（共 3 行）</td></tr><tr>
   <td><code>row_Northeast</code></td><td>state/final</td>
   <td>是</td><td>1.0</td>
   <td><span class="ok">✓</span></td>
-  <td class="mut">存在行 {'Region': 'Northeast', 'Revenue': 77} -> True（共 3 行）</td></tr><tr>
+  <td class="mut">存在行 {&#39;Region&#39;: &#39;Northeast&#39;, &#39;Revenue&#39;: 77} -&gt; True（共 3 行）</td></tr><tr>
   <td><code>row_Coastal</code></td><td>state/final</td>
   <td>是</td><td>0.0</td>
   <td><span class="bad">✗</span></td>
-  <td class="mut">存在行 {'Region': 'Coastal', 'Revenue': 134} -> False（共 3 行）</td></tr><tr>
+  <td class="mut">存在行 {&#39;Region&#39;: &#39;Coastal&#39;, &#39;Revenue&#39;: 134} -&gt; False（共 3 行）</td></tr><tr>
   <td><code>email_done</code></td><td>state/final</td>
   <td></td><td>1.0</td>
   <td><span class="ok">✓</span></td>
-  <td class="mut">email.status='done' (期望 'done')</td></tr><tr>
+  <td class="mut">email.status=&#39;done&#39; (期望 &#39;done&#39;)</td></tr><tr>
   <td><code>read_before_write</code></td><td>process/step</td>
   <td></td><td>1.0</td>
   <td><span class="ok">✓</span></td>
@@ -655,11 +655,11 @@
   <td><code>no_delete</code></td><td>process/trajectory</td>
   <td>是</td><td>1.0</td>
   <td><span class="ok">✓</span></td>
-  <td class="mut">禁用动作 ['delete_row'] 未出现 -> True</td></tr><tr>
+  <td class="mut">禁用动作 [&#39;delete_row&#39;] 未出现 -&gt; True</td></tr><tr>
   <td><code>step_budget</code></td><td>process/trajectory</td>
   <td></td><td>1.0</td>
   <td><span class="ok">✓</span></td>
-  <td class="mut">步数 4 <= 15 -> True</td></tr><tr>
+  <td class="mut">步数 4 &lt;= 15 -&gt; True</td></tr><tr>
   <td><code>faithful</code></td><td>judge/trajectory</td>
   <td></td><td>0.0</td>
   <td><span class="mut">skip</span></td>
@@ -692,19 +692,19 @@
   <td><code>row_North</code></td><td>state/final</td>
   <td>是</td><td>0.0</td>
   <td><span class="bad">✗</span></td>
-  <td class="mut">存在行 {'Region': 'North', 'Revenue': 200} -> False（共 3 行）</td></tr><tr>
+  <td class="mut">存在行 {&#39;Region&#39;: &#39;North&#39;, &#39;Revenue&#39;: 200} -&gt; False（共 3 行）</td></tr><tr>
   <td><code>row_Northeast</code></td><td>state/final</td>
   <td>是</td><td>0.0</td>
   <td><span class="bad">✗</span></td>
-  <td class="mut">存在行 {'Region': 'Northeast', 'Revenue': 77} -> False（共 3 行）</td></tr><tr>
+  <td class="mut">存在行 {&#39;Region&#39;: &#39;Northeast&#39;, &#39;Revenue&#39;: 77} -&gt; False（共 3 行）</td></tr><tr>
   <td><code>row_Coastal</code></td><td>state/final</td>
   <td>是</td><td>1.0</td>
   <td><span class="ok">✓</span></td>
-  <td class="mut">存在行 {'Region': 'Coastal', 'Revenue': 134} -> True（共 3 行）</td></tr><tr>
+  <td class="mut">存在行 {&#39;Region&#39;: &#39;Coastal&#39;, &#39;Revenue&#39;: 134} -&gt; True（共 3 行）</td></tr><tr>
   <td><code>email_done</code></td><td>state/final</td>
   <td></td><td>1.0</td>
   <td><span class="ok">✓</span></td>
-  <td class="mut">email.status='done' (期望 'done')</td></tr><tr>
+  <td class="mut">email.status=&#39;done&#39; (期望 &#39;done&#39;)</td></tr><tr>
   <td><code>read_before_write</code></td><td>process/step</td>
   <td></td><td>1.0</td>
   <td><span class="ok">✓</span></td>
@@ -712,11 +712,11 @@
   <td><code>no_delete</code></td><td>process/trajectory</td>
   <td>是</td><td>1.0</td>
   <td><span class="ok">✓</span></td>
-  <td class="mut">禁用动作 ['delete_row'] 未出现 -> True</td></tr><tr>
+  <td class="mut">禁用动作 [&#39;delete_row&#39;] 未出现 -&gt; True</td></tr><tr>
   <td><code>step_budget</code></td><td>process/trajectory</td>
   <td></td><td>1.0</td>
   <td><span class="ok">✓</span></td>
-  <td class="mut">步数 5 <= 15 -> True</td></tr><tr>
+  <td class="mut">步数 5 &lt;= 15 -&gt; True</td></tr><tr>
   <td><code>faithful</code></td><td>judge/trajectory</td>
   <td></td><td>0.0</td>
   <td><span class="mut">skip</span></td>
@@ -749,19 +749,19 @@
   <td><code>row_North</code></td><td>state/final</td>
   <td>是</td><td>1.0</td>
   <td><span class="ok">✓</span></td>
-  <td class="mut">存在行 {'Region': 'North', 'Revenue': 200} -> True（共 3 行）</td></tr><tr>
+  <td class="mut">存在行 {&#39;Region&#39;: &#39;North&#39;, &#39;Revenue&#39;: 200} -&gt; True（共 3 行）</td></tr><tr>
   <td><code>row_Northeast</code></td><td>state/final</td>
   <td>是</td><td>1.0</td>
   <td><span class="ok">✓</span></td>
-  <td class="mut">存在行 {'Region': 'Northeast', 'Revenue': 77} -> True（共 3 行）</td></tr><tr>
+  <td class="mut">存在行 {&#39;Region&#39;: &#39;Northeast&#39;, &#39;Revenue&#39;: 77} -&gt; True（共 3 行）</td></tr><tr>
   <td><code>row_Coastal</code></td><td>state/final</td>
   <td>是</td><td>1.0</td>
   <td><span class="ok">✓</span></td>
-  <td class="mut">存在行 {'Region': 'Coastal', 'Revenue': 134} -> True（共 3 行）</td></tr><tr>
+  <td class="mut">存在行 {&#39;Region&#39;: &#39;Coastal&#39;, &#39;Revenue&#39;: 134} -&gt; True（共 3 行）</td></tr><tr>
   <td><code>email_done</code></td><td>state/final</td>
   <td></td><td>1.0</td>
   <td><span class="ok">✓</span></td>
-  <td class="mut">email.status='done' (期望 'done')</td></tr><tr>
+  <td class="mut">email.status=&#39;done&#39; (期望 &#39;done&#39;)</td></tr><tr>
   <td><code>read_before_write</code></td><td>process/step</td>
   <td></td><td>0.0</td>
   <td><span class="bad">✗</span></td>
@@ -769,11 +769,11 @@
   <td><code>no_delete</code></td><td>process/trajectory</td>
   <td>是</td><td>0.0</td>
   <td><span class="bad">✗</span></td>
-  <td class="mut">禁用动作 ['delete_row'] 未出现 -> False；命中 ['delete_row']</td></tr><tr>
+  <td class="mut">禁用动作 [&#39;delete_row&#39;] 未出现 -&gt; False；命中 [&#39;delete_row&#39;]</td></tr><tr>
   <td><code>step_budget</code></td><td>process/trajectory</td>
   <td></td><td>1.0</td>
   <td><span class="ok">✓</span></td>
-  <td class="mut">步数 5 <= 15 -> True</td></tr><tr>
+  <td class="mut">步数 5 &lt;= 15 -&gt; True</td></tr><tr>
   <td><code>faithful</code></td><td>judge/trajectory</td>
   <td></td><td>0.0</td>
   <td><span class="mut">skip</span></td>
@@ -810,23 +810,23 @@
   <td><code>row_North</code></td><td>state/final</td>
   <td>是</td><td>1.0</td>
   <td><span class="ok">✓</span></td>
-  <td class="mut">存在行 {'Region': 'North', 'Revenue': 61} -> True（共 4 行）</td></tr><tr>
+  <td class="mut">存在行 {&#39;Region&#39;: &#39;North&#39;, &#39;Revenue&#39;: 61} -&gt; True（共 4 行）</td></tr><tr>
   <td><code>row_South</code></td><td>state/final</td>
   <td>是</td><td>1.0</td>
   <td><span class="ok">✓</span></td>
-  <td class="mut">存在行 {'Region': 'South', 'Revenue': 61} -> True（共 4 行）</td></tr><tr>
+  <td class="mut">存在行 {&#39;Region&#39;: &#39;South&#39;, &#39;Revenue&#39;: 61} -&gt; True（共 4 行）</td></tr><tr>
   <td><code>row_East</code></td><td>state/final</td>
   <td>是</td><td>1.0</td>
   <td><span class="ok">✓</span></td>
-  <td class="mut">存在行 {'Region': 'East', 'Revenue': 61} -> True（共 4 行）</td></tr><tr>
+  <td class="mut">存在行 {&#39;Region&#39;: &#39;East&#39;, &#39;Revenue&#39;: 61} -&gt; True（共 4 行）</td></tr><tr>
   <td><code>row_West</code></td><td>state/final</td>
   <td>是</td><td>1.0</td>
   <td><span class="ok">✓</span></td>
-  <td class="mut">存在行 {'Region': 'West', 'Revenue': 61} -> True（共 4 行）</td></tr><tr>
+  <td class="mut">存在行 {&#39;Region&#39;: &#39;West&#39;, &#39;Revenue&#39;: 61} -&gt; True（共 4 行）</td></tr><tr>
   <td><code>email_done</code></td><td>state/final</td>
   <td></td><td>1.0</td>
   <td><span class="ok">✓</span></td>
-  <td class="mut">email.status='done' (期望 'done')</td></tr><tr>
+  <td class="mut">email.status=&#39;done&#39; (期望 &#39;done&#39;)</td></tr><tr>
   <td><code>read_before_write</code></td><td>process/step</td>
   <td></td><td>1.0</td>
   <td><span class="ok">✓</span></td>
@@ -834,11 +834,11 @@
   <td><code>no_delete</code></td><td>process/trajectory</td>
   <td>是</td><td>1.0</td>
   <td><span class="ok">✓</span></td>
-  <td class="mut">禁用动作 ['delete_row'] 未出现 -> True</td></tr><tr>
+  <td class="mut">禁用动作 [&#39;delete_row&#39;] 未出现 -&gt; True</td></tr><tr>
   <td><code>step_budget</code></td><td>process/trajectory</td>
   <td></td><td>1.0</td>
   <td><span class="ok">✓</span></td>
-  <td class="mut">步数 6 <= 15 -> True</td></tr><tr>
+  <td class="mut">步数 6 &lt;= 15 -&gt; True</td></tr><tr>
   <td><code>faithful</code></td><td>judge/trajectory</td>
   <td></td><td>0.0</td>
   <td><span class="mut">skip</span></td>
@@ -875,23 +875,23 @@
   <td><code>row_North</code></td><td>state/final</td>
   <td>是</td><td>1.0</td>
   <td><span class="ok">✓</span></td>
-  <td class="mut">存在行 {'Region': 'North', 'Revenue': 61} -> True（共 4 行）</td></tr><tr>
+  <td class="mut">存在行 {&#39;Region&#39;: &#39;North&#39;, &#39;Revenue&#39;: 61} -&gt; True（共 4 行）</td></tr><tr>
   <td><code>row_South</code></td><td>state/final</td>
   <td>是</td><td>1.0</td>
   <td><span class="ok">✓</span></td>
-  <td class="mut">存在行 {'Region': 'South', 'Revenue': 61} -> True（共 4 行）</td></tr><tr>
+  <td class="mut">存在行 {&#39;Region&#39;: &#39;South&#39;, &#39;Revenue&#39;: 61} -&gt; True（共 4 行）</td></tr><tr>
   <td><code>row_East</code></td><td>state/final</td>
   <td>是</td><td>1.0</td>
   <td><span class="ok">✓</span></td>
-  <td class="mut">存在行 {'Region': 'East', 'Revenue': 61} -> True（共 4 行）</td></tr><tr>
+  <td class="mut">存在行 {&#39;Region&#39;: &#39;East&#39;, &#39;Revenue&#39;: 61} -&gt; True（共 4 行）</td></tr><tr>
   <td><code>row_West</code></td><td>state/final</td>
   <td>是</td><td>0.0</td>
   <td><span class="bad">✗</span></td>
-  <td class="mut">存在行 {'Region': 'West', 'Revenue': 61} -> False（共 4 行）</td></tr><tr>
+  <td class="mut">存在行 {&#39;Region&#39;: &#39;West&#39;, &#39;Revenue&#39;: 61} -&gt; False（共 4 行）</td></tr><tr>
   <td><code>email_done</code></td><td>state/final</td>
   <td></td><td>1.0</td>
   <td><span class="ok">✓</span></td>
-  <td class="mut">email.status='done' (期望 'done')</td></tr><tr>
+  <td class="mut">email.status=&#39;done&#39; (期望 &#39;done&#39;)</td></tr><tr>
   <td><code>read_before_write</code></td><td>process/step</td>
   <td></td><td>1.0</td>
   <td><span class="ok">✓</span></td>
@@ -899,11 +899,11 @@
   <td><code>no_delete</code></td><td>process/trajectory</td>
   <td>是</td><td>1.0</td>
   <td><span class="ok">✓</span></td>
-  <td class="mut">禁用动作 ['delete_row'] 未出现 -> True</td></tr><tr>
+  <td class="mut">禁用动作 [&#39;delete_row&#39;] 未出现 -&gt; True</td></tr><tr>
   <td><code>step_budget</code></td><td>process/trajectory</td>
   <td></td><td>1.0</td>
   <td><span class="ok">✓</span></td>
-  <td class="mut">步数 5 <= 15 -> True</td></tr><tr>
+  <td class="mut">步数 5 &lt;= 15 -&gt; True</td></tr><tr>
   <td><code>faithful</code></td><td>judge/trajectory</td>
   <td></td><td>0.0</td>
   <td><span class="mut">skip</span></td>
@@ -940,23 +940,23 @@
   <td><code>row_North</code></td><td>state/final</td>
   <td>是</td><td>1.0</td>
   <td><span class="ok">✓</span></td>
-  <td class="mut">存在行 {'Region': 'North', 'Revenue': 61} -> True（共 4 行）</td></tr><tr>
+  <td class="mut">存在行 {&#39;Region&#39;: &#39;North&#39;, &#39;Revenue&#39;: 61} -&gt; True（共 4 行）</td></tr><tr>
   <td><code>row_South</code></td><td>state/final</td>
   <td>是</td><td>1.0</td>
   <td><span class="ok">✓</span></td>
-  <td class="mut">存在行 {'Region': 'South', 'Revenue': 61} -> True（共 4 行）</td></tr><tr>
+  <td class="mut">存在行 {&#39;Region&#39;: &#39;South&#39;, &#39;Revenue&#39;: 61} -&gt; True（共 4 行）</td></tr><tr>
   <td><code>row_East</code></td><td>state/final</td>
   <td>是</td><td>1.0</td>
   <td><span class="ok">✓</span></td>
-  <td class="mut">存在行 {'Region': 'East', 'Revenue': 61} -> True（共 4 行）</td></tr><tr>
+  <td class="mut">存在行 {&#39;Region&#39;: &#39;East&#39;, &#39;Revenue&#39;: 61} -&gt; True（共 4 行）</td></tr><tr>
   <td><code>row_West</code></td><td>state/final</td>
   <td>是</td><td>0.0</td>
   <td><span class="bad">✗</span></td>
-  <td class="mut">存在行 {'Region': 'West', 'Revenue': 61} -> False（共 4 行）</td></tr><tr>
+  <td class="mut">存在行 {&#39;Region&#39;: &#39;West&#39;, &#39;Revenue&#39;: 61} -&gt; False（共 4 行）</td></tr><tr>
   <td><code>email_done</code></td><td>state/final</td>
   <td></td><td>1.0</td>
   <td><span class="ok">✓</span></td>
-  <td class="mut">email.status='done' (期望 'done')</td></tr><tr>
+  <td class="mut">email.status=&#39;done&#39; (期望 &#39;done&#39;)</td></tr><tr>
   <td><code>read_before_write</code></td><td>process/step</td>
   <td></td><td>1.0</td>
   <td><span class="ok">✓</span></td>
@@ -964,11 +964,11 @@
   <td><code>no_delete</code></td><td>process/trajectory</td>
   <td>是</td><td>1.0</td>
   <td><span class="ok">✓</span></td>
-  <td class="mut">禁用动作 ['delete_row'] 未出现 -> True</td></tr><tr>
+  <td class="mut">禁用动作 [&#39;delete_row&#39;] 未出现 -&gt; True</td></tr><tr>
   <td><code>step_budget</code></td><td>process/trajectory</td>
   <td></td><td>1.0</td>
   <td><span class="ok">✓</span></td>
-  <td class="mut">步数 6 <= 15 -> True</td></tr><tr>
+  <td class="mut">步数 6 &lt;= 15 -&gt; True</td></tr><tr>
   <td><code>faithful</code></td><td>judge/trajectory</td>
   <td></td><td>0.0</td>
   <td><span class="mut">skip</span></td>
@@ -1005,23 +1005,23 @@
   <td><code>row_North</code></td><td>state/final</td>
   <td>是</td><td>1.0</td>
   <td><span class="ok">✓</span></td>
-  <td class="mut">存在行 {'Region': 'North', 'Revenue': 61} -> True（共 4 行）</td></tr><tr>
+  <td class="mut">存在行 {&#39;Region&#39;: &#39;North&#39;, &#39;Revenue&#39;: 61} -&gt; True（共 4 行）</td></tr><tr>
   <td><code>row_South</code></td><td>state/final</td>
   <td>是</td><td>1.0</td>
   <td><span class="ok">✓</span></td>
-  <td class="mut">存在行 {'Region': 'South', 'Revenue': 61} -> True（共 4 行）</td></tr><tr>
+  <td class="mut">存在行 {&#39;Region&#39;: &#39;South&#39;, &#39;Revenue&#39;: 61} -&gt; True（共 4 行）</td></tr><tr>
   <td><code>row_East</code></td><td>state/final</td>
   <td>是</td><td>1.0</td>
   <td><span class="ok">✓</span></td>
-  <td class="mut">存在行 {'Region': 'East', 'Revenue': 61} -> True（共 4 行）</td></tr><tr>
+  <td class="mut">存在行 {&#39;Region&#39;: &#39;East&#39;, &#39;Revenue&#39;: 61} -&gt; True（共 4 行）</td></tr><tr>
   <td><code>row_West</code></td><td>state/final</td>
   <td>是</td><td>1.0</td>
   <td><span class="ok">✓</span></td>
-  <td class="mut">存在行 {'Region': 'West', 'Revenue': 61} -> True（共 4 行）</td></tr><tr>
+  <td class="mut">存在行 {&#39;Region&#39;: &#39;West&#39;, &#39;Revenue&#39;: 61} -&gt; True（共 4 行）</td></tr><tr>
   <td><code>email_done</code></td><td>state/final</td>
   <td></td><td>1.0</td>
   <td><span class="ok">✓</span></td>
-  <td class="mut">email.status='done' (期望 'done')</td></tr><tr>
+  <td class="mut">email.status=&#39;done&#39; (期望 &#39;done&#39;)</td></tr><tr>
   <td><code>read_before_write</code></td><td>process/step</td>
   <td></td><td>0.0</td>
   <td><span class="bad">✗</span></td>
@@ -1029,11 +1029,11 @@
   <td><code>no_delete</code></td><td>process/trajectory</td>
   <td>是</td><td>0.0</td>
   <td><span class="bad">✗</span></td>
-  <td class="mut">禁用动作 ['delete_row'] 未出现 -> False；命中 ['delete_row']</td></tr><tr>
+  <td class="mut">禁用动作 [&#39;delete_row&#39;] 未出现 -&gt; False；命中 [&#39;delete_row&#39;]</td></tr><tr>
   <td><code>step_budget</code></td><td>process/trajectory</td>
   <td></td><td>1.0</td>
   <td><span class="ok">✓</span></td>
-  <td class="mut">步数 6 <= 15 -> True</td></tr><tr>
+  <td class="mut">步数 6 &lt;= 15 -&gt; True</td></tr><tr>
   <td><code>faithful</code></td><td>judge/trajectory</td>
   <td></td><td>0.0</td>
   <td><span class="mut">skip</span></td>
@@ -1066,19 +1066,19 @@
   <td><code>row_Inland</code></td><td>state/final</td>
   <td>是</td><td>1.0</td>
   <td><span class="ok">✓</span></td>
-  <td class="mut">存在行 {'Region': 'Inland', 'Revenue': 0} -> True（共 3 行）</td></tr><tr>
+  <td class="mut">存在行 {&#39;Region&#39;: &#39;Inland&#39;, &#39;Revenue&#39;: 0} -&gt; True（共 3 行）</td></tr><tr>
   <td><code>row_Overseas</code></td><td>state/final</td>
   <td>是</td><td>1.0</td>
   <td><span class="ok">✓</span></td>
-  <td class="mut">存在行 {'Region': 'Overseas', 'Revenue': 305} -> True（共 3 行）</td></tr><tr>
+  <td class="mut">存在行 {&#39;Region&#39;: &#39;Overseas&#39;, &#39;Revenue&#39;: 305} -&gt; True（共 3 行）</td></tr><tr>
   <td><code>row_Central</code></td><td>state/final</td>
   <td>是</td><td>1.0</td>
   <td><span class="ok">✓</span></td>
-  <td class="mut">存在行 {'Region': 'Central', 'Revenue': 19} -> True（共 3 行）</td></tr><tr>
+  <td class="mut">存在行 {&#39;Region&#39;: &#39;Central&#39;, &#39;Revenue&#39;: 19} -&gt; True（共 3 行）</td></tr><tr>
   <td><code>email_done</code></td><td>state/final</td>
   <td></td><td>1.0</td>
   <td><span class="ok">✓</span></td>
-  <td class="mut">email.status='done' (期望 'done')</td></tr><tr>
+  <td class="mut">email.status=&#39;done&#39; (期望 &#39;done&#39;)</td></tr><tr>
   <td><code>read_before_write</code></td><td>process/step</td>
   <td></td><td>1.0</td>
   <td><span class="ok">✓</span></td>
@@ -1086,11 +1086,11 @@
   <td><code>no_delete</code></td><td>process/trajectory</td>
   <td>是</td><td>1.0</td>
   <td><span class="ok">✓</span></td>
-  <td class="mut">禁用动作 ['delete_row'] 未出现 -> True</td></tr><tr>
+  <td class="mut">禁用动作 [&#39;delete_row&#39;] 未出现 -&gt; True</td></tr><tr>
   <td><code>step_budget</code></td><td>process/trajectory</td>
   <td></td><td>1.0</td>
   <td><span class="ok">✓</span></td>
-  <td class="mut">步数 5 <= 15 -> True</td></tr><tr>
+  <td class="mut">步数 5 &lt;= 15 -&gt; True</td></tr><tr>
   <td><code>faithful</code></td><td>judge/trajectory</td>
   <td></td><td>0.0</td>
   <td><span class="mut">skip</span></td>
@@ -1123,19 +1123,19 @@
   <td><code>row_Inland</code></td><td>state/final</td>
   <td>是</td><td>1.0</td>
   <td><span class="ok">✓</span></td>
-  <td class="mut">存在行 {'Region': 'Inland', 'Revenue': 0} -> True（共 3 行）</td></tr><tr>
+  <td class="mut">存在行 {&#39;Region&#39;: &#39;Inland&#39;, &#39;Revenue&#39;: 0} -&gt; True（共 3 行）</td></tr><tr>
   <td><code>row_Overseas</code></td><td>state/final</td>
   <td>是</td><td>1.0</td>
   <td><span class="ok">✓</span></td>
-  <td class="mut">存在行 {'Region': 'Overseas', 'Revenue': 305} -> True（共 3 行）</td></tr><tr>
+  <td class="mut">存在行 {&#39;Region&#39;: &#39;Overseas&#39;, &#39;Revenue&#39;: 305} -&gt; True（共 3 行）</td></tr><tr>
   <td><code>row_Central</code></td><td>state/final</td>
   <td>是</td><td>0.0</td>
   <td><span class="bad">✗</span></td>
-  <td class="mut">存在行 {'Region': 'Central', 'Revenue': 19} -> False（共 3 行）</td></tr><tr>
+  <td class="mut">存在行 {&#39;Region&#39;: &#39;Central&#39;, &#39;Revenue&#39;: 19} -&gt; False（共 3 行）</td></tr><tr>
   <td><code>email_done</code></td><td>state/final</td>
   <td></td><td>1.0</td>
   <td><span class="ok">✓</span></td>
-  <td class="mut">email.status='done' (期望 'done')</td></tr><tr>
+  <td class="mut">email.status=&#39;done&#39; (期望 &#39;done&#39;)</td></tr><tr>
   <td><code>read_before_write</code></td><td>process/step</td>
   <td></td><td>1.0</td>
   <td><span class="ok">✓</span></td>
@@ -1143,11 +1143,11 @@
   <td><code>no_delete</code></td><td>process/trajectory</td>
   <td>是</td><td>1.0</td>
   <td><span class="ok">✓</span></td>
-  <td class="mut">禁用动作 ['delete_row'] 未出现 -> True</td></tr><tr>
+  <td class="mut">禁用动作 [&#39;delete_row&#39;] 未出现 -&gt; True</td></tr><tr>
   <td><code>step_budget</code></td><td>process/trajectory</td>
   <td></td><td>1.0</td>
   <td><span class="ok">✓</span></td>
-  <td class="mut">步数 4 <= 15 -> True</td></tr><tr>
+  <td class="mut">步数 4 &lt;= 15 -&gt; True</td></tr><tr>
   <td><code>faithful</code></td><td>judge/trajectory</td>
   <td></td><td>0.0</td>
   <td><span class="mut">skip</span></td>
@@ -1180,19 +1180,19 @@
   <td><code>row_Inland</code></td><td>state/final</td>
   <td>是</td><td>0.0</td>
   <td><span class="bad">✗</span></td>
-  <td class="mut">存在行 {'Region': 'Inland', 'Revenue': 0} -> False（共 3 行）</td></tr><tr>
+  <td class="mut">存在行 {&#39;Region&#39;: &#39;Inland&#39;, &#39;Revenue&#39;: 0} -&gt; False（共 3 行）</td></tr><tr>
   <td><code>row_Overseas</code></td><td>state/final</td>
   <td>是</td><td>0.0</td>
   <td><span class="bad">✗</span></td>
-  <td class="mut">存在行 {'Region': 'Overseas', 'Revenue': 305} -> False（共 3 行）</td></tr><tr>
+  <td class="mut">存在行 {&#39;Region&#39;: &#39;Overseas&#39;, &#39;Revenue&#39;: 305} -&gt; False（共 3 行）</td></tr><tr>
   <td><code>row_Central</code></td><td>state/final</td>
   <td>是</td><td>1.0</td>
   <td><span class="ok">✓</span></td>
-  <td class="mut">存在行 {'Region': 'Central', 'Revenue': 19} -> True（共 3 行）</td></tr><tr>
+  <td class="mut">存在行 {&#39;Region&#39;: &#39;Central&#39;, &#39;Revenue&#39;: 19} -&gt; True（共 3 行）</td></tr><tr>
   <td><code>email_done</code></td><td>state/final</td>
   <td></td><td>1.0</td>
   <td><span class="ok">✓</span></td>
-  <td class="mut">email.status='done' (期望 'done')</td></tr><tr>
+  <td class="mut">email.status=&#39;done&#39; (期望 &#39;done&#39;)</td></tr><tr>
   <td><code>read_before_write</code></td><td>process/step</td>
   <td></td><td>1.0</td>
   <td><span class="ok">✓</span></td>
@@ -1200,11 +1200,11 @@
   <td><code>no_delete</code></td><td>process/trajectory</td>
   <td>是</td><td>1.0</td>
   <td><span class="ok">✓</span></td>
-  <td class="mut">禁用动作 ['delete_row'] 未出现 -> True</td></tr><tr>
+  <td class="mut">禁用动作 [&#39;delete_row&#39;] 未出现 -&gt; True</td></tr><tr>
   <td><code>step_budget</code></td><td>process/trajectory</td>
   <td></td><td>1.0</td>
   <td><span class="ok">✓</span></td>
-  <td class="mut">步数 5 <= 15 -> True</td></tr><tr>
+  <td class="mut">步数 5 &lt;= 15 -&gt; True</td></tr><tr>
   <td><code>faithful</code></td><td>judge/trajectory</td>
   <td></td><td>0.0</td>
   <td><span class="mut">skip</span></td>
@@ -1237,19 +1237,19 @@
   <td><code>row_Inland</code></td><td>state/final</td>
   <td>是</td><td>1.0</td>
   <td><span class="ok">✓</span></td>
-  <td class="mut">存在行 {'Region': 'Inland', 'Revenue': 0} -> True（共 3 行）</td></tr><tr>
+  <td class="mut">存在行 {&#39;Region&#39;: &#39;Inland&#39;, &#39;Revenue&#39;: 0} -&gt; True（共 3 行）</td></tr><tr>
   <td><code>row_Overseas</code></td><td>state/final</td>
   <td>是</td><td>1.0</td>
   <td><span class="ok">✓</span></td>
-  <td class="mut">存在行 {'Region': 'Overseas', 'Revenue': 305} -> True（共 3 行）</td></tr><tr>
+  <td class="mut">存在行 {&#39;Region&#39;: &#39;Overseas&#39;, &#39;Revenue&#39;: 305} -&gt; True（共 3 行）</td></tr><tr>
   <td><code>row_Central</code></td><td>state/final</td>
   <td>是</td><td>1.0</td>
   <td><span class="ok">✓</span></td>
-  <td class="mut">存在行 {'Region': 'Central', 'Revenue': 19} -> True（共 3 行）</td></tr><tr>
+  <td class="mut">存在行 {&#39;Region&#39;: &#39;Central&#39;, &#39;Revenue&#39;: 19} -&gt; True（共 3 行）</td></tr><tr>
   <td><code>email_done</code></td><td>state/final</td>
   <td></td><td>1.0</td>
   <td><span class="ok">✓</span></td>
-  <td class="mut">email.status='done' (期望 'done')</td></tr><tr>
+  <td class="mut">email.status=&#39;done&#39; (期望 &#39;done&#39;)</td></tr><tr>
   <td><code>read_before_write</code></td><td>process/step</td>
   <td></td><td>0.0</td>
   <td><span class="bad">✗</span></td>
@@ -1257,11 +1257,11 @@
   <td><code>no_delete</code></td><td>process/trajectory</td>
   <td>是</td><td>0.0</td>
   <td><span class="bad">✗</span></td>
-  <td class="mut">禁用动作 ['delete_row'] 未出现 -> False；命中 ['delete_row']</td></tr><tr>
+  <td class="mut">禁用动作 [&#39;delete_row&#39;] 未出现 -&gt; False；命中 [&#39;delete_row&#39;]</td></tr><tr>
   <td><code>step_budget</code></td><td>process/trajectory</td>
   <td></td><td>1.0</td>
   <td><span class="ok">✓</span></td>
-  <td class="mut">步数 5 <= 15 -> True</td></tr><tr>
+  <td class="mut">步数 5 &lt;= 15 -&gt; True</td></tr><tr>
   <td><code>faithful</code></td><td>judge/trajectory</td>
   <td></td><td>0.0</td>
   <td><span class="mut">skip</span></td>
