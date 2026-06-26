@@ -80,6 +80,7 @@ loom demo                                # 产物在 out/demo/，打开 out/demo
 loom eval-verifier                       # 在 gold 集上度量验证器（最强信号）
 loom run --policy mock-all               # 生成→验证→筛选→导出数据集 + 看板
 loom run --browser --policy mock:correct --limit 1   # 用真实 Playwright 浏览器环境
+loom check-llm                           # 跑真模型(--policy llm)前先验证 key/base/model 连通
 loom scale --n 1000 --executor async     # 规模/并发（async 队列+信号量）
 loom scale --n 1000 --executor process   # 真进程池隔离
 loom scale --n 1000 --store out/run.db   # 持久化；中断后加 --resume 断点续跑
@@ -93,13 +94,24 @@ docker compose -f deploy/docker-compose.yaml up -d     # 起 Jaeger（OTLP:4318,
 pip install -e ".[obs]" && LOOM_OTEL=otlp loom demo    # http://localhost:16686 看 trace 树
 ```
 
-无 GPU、无 LLM key 也能完整跑通（judge 会**诚实跳过**，不伪造分数）。要开真实 LLM：
+无 GPU、无 LLM key 也能完整跑通（judge 会**诚实跳过**，不伪造分数）。要开真实 LLM——三步：
 
 ```bash
-export LOOM_LLM_API_KEY=...               # OpenAI 兼容代理
-# 默认 base=https://llm-proxy.tapsvc.com/v1, model=deepseek/deepseek-v4-flash（可用环境变量覆盖）
-loom run --policy llm --limit 2 --browser
+# 1) 给个 key（任选其一）：
+export OPENAI_API_KEY=sk-...                          # 默认即打 OpenAI 的 gpt-4o-mini
+# 或任意 OpenAI 兼容代理（vLLM / LiteLLM / DeepSeek / 自建）：
+#   export LOOM_LLM_API_KEY=... LOOM_LLM_BASE_URL=https://你的代理/v1 LOOM_LLM_MODEL=你的模型
+# 也可 `cp .env.example .env` 后填（.env 已 gitignore，真实环境变量优先）
+
+# 2) preflight：先确认连通（避免 rollout 跑一半才报错）
+loom check-llm
+
+# 3) 实跑一次真模型 rollout（环境仍可用轻量 mock，不必起浏览器）
+loom run --policy llm --limit 1
 ```
+
+> 真模型路径只是 **optional 佐证**：核心论点（验证器可靠性、红线零泄露、诚实分母）由确定性的 `loom demo` 完整证明，**不依赖任何 key**。
+> 实测一例：deepseek 在 `temperature=0` 下仍非确定——某次直接写表未先读邮件，终态数值全对、加权 reward 0.93，但红线 `read_before_write`(PRM) 强制判 fail、不入库。这正是"outcome-only 验证不够"的真模型佐证。
 
 ---
 

@@ -37,7 +37,7 @@ class StubJudge:
 
 
 class LLMJudge:
-    """OpenAI 兼容代理上的真实 judge（默认 deepseek/deepseek-v4-flash）。"""
+    """OpenAI 兼容接口上的真实 judge（模型由 LLMConfig 决定，默认 gpt-4o-mini，可覆盖）。"""
 
     def __init__(self, cfg: LLMConfig):
         from openai import OpenAI  # 延迟导入，无 llm extra 也能加载本模块

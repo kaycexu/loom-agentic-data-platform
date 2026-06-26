@@ -101,7 +101,18 @@ flowchart LR
 pip install -e ".[browser,llm,dev,obs]"
 loom demo                 # 验证器评估 + 全链路生成 + 1k 规模 → 打开 out/demo/report.html
 loom eval-verifier        # 在 gold 集上度量验证器本身（最强信号：leakage/FA/FR）
+pytest -q                 # 48 passed
 ```
+
+**以上全部不需要任何 LLM key**（judge 无 key 时诚实跳过；主链路用确定性 MockPolicy）。想顺带验证真模型路径（可选佐证）：
+
+```bash
+export OPENAI_API_KEY=sk-...          # 或任意 OpenAI 兼容代理，见 .env.example
+loom check-llm                        # 先确认 key/base/model 连通
+loom run --policy llm --limit 1       # 真模型实跑一次（环境用轻量 mock）
+```
+
+> 给用 Claude Code / Codex review 的你：克隆后让 agent 跑 `pip install -e ".[dev]" && loom demo && pytest -q`，全程零 key、确定性可复现；想看真模型再按上面三行配自己的 key。`loom check-llm` 会明确告诉你连通/失败原因。
 
 不想装环境：直接看 [`examples/sample-run/`](examples/sample-run/)（含 `manifest.json` 的诚实分母、`schedule.json` 的成本模型）与上面的截图。
 

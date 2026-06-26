@@ -3,6 +3,7 @@
   loom demo                         一键综合 demo（验证器评估 + 全链路 + 1k 规模 → 一个看板）
   loom eval-verifier                在 gold 集上度量验证器（最强信号）
   loom run --policy mock-all        生成→验证→筛选→导出数据集 + 看板
+  loom check-llm                    探真实 LLM 连通性（跑 --policy llm 前先验证 key/base/model）
   loom scale --n 1000 --executor async|process   规模/并发（资源感知 + 续跑 + dead-letter）
   loom report --run out/demo        重新渲染看板
   loom materialize-tasks --n 1000   把任务+rubric 落成声明式文件
@@ -103,6 +104,56 @@ def scale(
 def report(run_dir: str = typer.Option("out/demo", "--run", help="run 目录")):
     """从已有 run 目录重新渲染看板。"""
     rprint(f"[bold green]看板[/]: {render_report(RunDir(run_dir))}")
+
+
+@app.command("check-llm")
+def check_llm():
+    """Preflight：探一次真实 LLM 连通性，再决定要不要 `loom run --policy llm`。
+
+    无 key 时给出配置指引（注意：mock 主链路 `loom demo` 本就不需要任何 key）。"""
+    import time
+
+    from loom.config import llm_config
+
+    cfg = llm_config()
+    rprint(f"base_url = [cyan]{cfg.base_url}[/]    model = [cyan]{cfg.model}[/]")
+    if not cfg.enabled:
+        rprint("[bold yellow]✗ 未检测到 LLM key[/] —— 真实模型路径不可用。")
+        rprint("  配置任一即可（真实环境变量 > .env > 默认）：")
+        rprint("    [dim]export OPENAI_API_KEY=sk-...[/]                  # 默认打 api.openai.com")
+        rprint("    [dim]export LOOM_LLM_API_KEY=...  LOOM_LLM_BASE_URL=...  LOOM_LLM_MODEL=...[/]  # 任意 OpenAI 兼容代理")
+        rprint("    [dim]cp .env.example .env  然后填上面三个变量[/]")
+        rprint("  [green]提示[/]：无需 key 也能验证全部论点 —— 直接 `loom demo` / `loom eval-verifier`。")
+        raise typer.Exit(code=1)
+
+    from openai import OpenAI
+
+    cli = OpenAI(base_url=cfg.base_url, api_key=cfg.api_key, timeout=min(cfg.timeout, 30))
+    t0 = time.perf_counter()
+    try:
+        r = cli.chat.completions.create(
+            model=cfg.model, temperature=0.0,
+            messages=[{"role": "system", "content": "reply with json only"},
+                      {"role": "user", "content": 'return {"ok":true} as json'}],
+            response_format={"type": "json_object"},
+        )
+    except Exception as e:  # noqa: BLE001
+        dt = round(time.perf_counter() - t0, 2)
+        name = type(e).__name__
+        rprint(f"[bold red]✗ 连接失败[/]（{dt}s）：{name}: {str(e)[:200]}")
+        hint = {"AuthenticationError": "key 无效/过期 → 换一个有效 key",
+                "NotFoundError": "该 base 上没有这个 model → 设 LOOM_LLM_MODEL 换成可用模型",
+                "APIConnectionError": "base_url 不可达 → 检查 LOOM_LLM_BASE_URL / 网络",
+                "PermissionDeniedError": "key 无权访问该 model/endpoint"}.get(name)
+        if hint:
+            rprint(f"  [yellow]可能原因[/]：{hint}")
+        raise typer.Exit(code=1)
+
+    dt = round(time.perf_counter() - t0, 2)
+    u = r.usage
+    tok = f"prompt={u.prompt_tokens} completion={u.completion_tokens}" if u else "n/a"
+    rprint(f"[bold green]✓ 连通[/]（{dt}s）  返回 [dim]{r.choices[0].message.content!r}[/]  tokens: {tok}")
+    rprint("  可以跑真实 rollout 了：[cyan]loom run --policy llm --limit 1[/]")
 
 
 @app.command("materialize-tasks")
