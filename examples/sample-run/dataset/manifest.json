@@ -1,6 +1,6 @@
 {
   "dataset_id": "loom-dataset",
-  "created_at": "2026-06-26T11:56:35.832120+00:00",
+  "created_at": "2026-06-26T12:54:19.963857+00:00",
   "policy_model": "mock-oracle",
   "verifier_versions": {
     "verifier": "v1"
@@ -442,6 +442,19 @@
         ]
       }
     ]
+  },
+  "rollout_accounting": {
+    "attempted": 20,
+    "by_outcome": {
+      "completed": 20,
+      "policy_error": 0,
+      "env_fault": 0,
+      "harness_fault": 0
+    },
+    "signal": 20,
+    "excluded_faults": 0,
+    "kept": 5,
+    "legit_negatives": 15
   },
   "provenance": {
     "formats": [

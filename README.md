@@ -57,6 +57,10 @@ flowchart LR
 
 ![环境 UI](examples/env-ui.png)
 
+真实链路追踪（`LOOM_OTEL=otlp` → Jaeger）：一次调度的 `schedule → rollout → step` 与 `verify → check` span 树，4 个 rollout 跨线程统一在**同一条 trace**下（76 spans / 深度 3），证明调度、执行、验证全程可观测：
+
+![Jaeger trace 树](examples/jaeger-trace.png)
+
 ---
 
 ## 快速开始
